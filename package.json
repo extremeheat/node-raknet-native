@@ -1,0 +1,29 @@
+{
+  "name": "raknet-native",
+  "version": "1.0.0",
+  "description": "Native bindings for RakNet",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/extremeheat/node-raknet-native.git"
+  },
+  "keywords": [
+    "raknet",
+    "native"
+  ],
+  "author": "extremeheat",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/extremeheat/node-raknet-native/issues"
+  },
+  "homepage": "https://github.com/extremeheat/node-raknet-native#readme",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "cmake-js": "^6.1.0",
+    "node-addon-api": "^3.1.0",
+    "segfault-handler": "^1.3.0"
+  }
+}
