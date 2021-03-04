@@ -10,6 +10,7 @@ set(RAKNET_ENABLE_SAMPLES FALSE)
 
 add_subdirectory( raknet )
 
+set (CMAKE_CXX_STANDARD 14)
 include_directories("raknet/Source"})
 
 include_directories(${CMAKE_JS_INC})
