@@ -36,7 +36,7 @@ public:
     void Close(const Napi::CallbackInfo& info);
     // Called by garbage collector, we don't have to worry about it
     ~RakServer() {
-        printf("server SHUTTING DOWN\n");
+        //printf("raknet server freeing\n");
         if (server) {
             server->Shutdown(500);
             RakNet::RakPeerInterface::DestroyInstance(server);

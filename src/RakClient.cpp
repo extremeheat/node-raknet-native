@@ -13,7 +13,7 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-#define printf
+//#define printf
 
 // JS Bindings
 Napi::Object RakClient::Initialize(Napi::Env& env, Napi::Object& exports) {
@@ -87,14 +87,12 @@ void RakClient::RunLoop() {
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
     auto callback = [this](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
-        auto buffer = Napi::ArrayBuffer::New(env, data->data, data->length);
-        auto addr = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
-        hexdump(data->data, data->length);
+        //hexdump(data->data, data->length);
         jsCallback.Call({
             Napi::ArrayBuffer::New(env, data->data, data->length),
             Napi::String::From(env, data->systemAddress.ToString(true, '/')),
             Napi::String::From(env, data->guid.ToString())
-            });
+        });
         client->DeallocatePacket(data);
     };
 
@@ -103,12 +101,12 @@ void RakClient::RunLoop() {
     RakNet::SystemAddress clientID;
     while (context->running && client->IsActive()) {
         RakSleep(30);
-        for (p = client->Receive(); p; p = client->Receive()) {
-            // We got a packet, get the identifier with our handy function
+        while (p = client->Receive()) {
+            RakNet::Packet* pr = p;
             auto packetIdentifier = GetPacketIdentifier2(p);
             printf("Got packet ID: %d\n", packetIdentifier);
             //hexdump(p->data, p->length);
-            auto status = context->tsfn.BlockingCall(p, callback);
+            auto status = context->tsfn.BlockingCall(pr, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
             }
@@ -177,7 +175,7 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
     bool broadcast = info[4].As<Napi::Boolean>().ToBoolean();
 
     auto state = client->GetConnectionState(this->conAddr);
-    printf("CURRENT CONNECTION STATE: %d %d\n", state, buffer.ByteLength());
+    printf("Send con state: %d %d\n", state, buffer.ByteLength());
 
     if (state != RakNet::IS_CONNECTED) {
         return Napi::Number::New(env, -(int)state);
@@ -189,10 +187,5 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
 }
 
 void RakClient::Close(const Napi::CallbackInfo& info) {
-    /*std::this_thread::sleep_for(std::chrono::seconds(200));
-    auto cb = info[0].As<Napi::Function>();
-
-    cb.Call(info.This(), { Napi::String::New(info.Env(), "Hello world!") });*/
-
     if (this->client) this->client->Shutdown(600);
 }
