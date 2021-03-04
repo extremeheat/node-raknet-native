@@ -52,10 +52,6 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     }
 }
 
-void FreeBuf2(Napi::Env env, void *buf, JSPacket*hint) {
-    FreeJSPacket((JSPacket*)hint);
-}
-
 void RakServer::RunLoop() {
     auto client = ctx->rakPeer;
     // This callback transforms the native addon data (int *data) to JavaScript
@@ -64,7 +60,7 @@ void RakServer::RunLoop() {
     auto callback = [&](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
         //hexdump(data->data, data->length);
         jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf2, data),
+            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data),
             Napi::String::From(env, data->systemAddress.ToString(true, '/')),
             Napi::String::From(env, data->guid.ToString())
         });
@@ -77,8 +73,8 @@ void RakServer::RunLoop() {
     while (ctx->running && client->IsActive()) {
         RakSleep(30);
         while (p = client->Receive()) {
-            auto packetIdentifier = GetPacketIdentifier2(p);
-            printf("server Got packet ID: %d\n", packetIdentifier);
+            //auto packetIdentifier = GetPacketIdentifier2(p);
+            //printf("server Got packet ID: %d\n", packetIdentifier);
             auto jsp = CreateJSPacket(p);
             client->DeallocatePacket(p);
             auto status = ctx->tsfn.NonBlockingCall(jsp, callback);

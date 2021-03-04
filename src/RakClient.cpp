@@ -82,10 +82,6 @@ void RakClient::Setup() {
     client->Startup(8, &socketDescriptor, 1);
 }
 
-void FreeBuf1(Napi::Env env, void* buf, JSPacket* hint) {
-    FreeJSPacket((JSPacket*)hint);
-}
-
 void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
@@ -93,7 +89,7 @@ void RakClient::RunLoop() {
     auto callback = [this](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
         //hexdump(data->data, data->length);
         jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf1, data),
+            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data),
             Napi::String::From(env, data->systemAddress.ToString(true, '/')),
             Napi::String::From(env, data->guid.ToString())
         });
@@ -105,8 +101,8 @@ void RakClient::RunLoop() {
     while (context->running && client->IsActive()) {
         RakSleep(30);
         while (p = client->Receive()) {
-            auto packetIdentifier = GetPacketIdentifier2(p);
-            printf("Got packet ID: %d\n", packetIdentifier);
+            //auto packetIdentifier = GetPacketIdentifier2(p);
+            //printf("Got packet ID: %d\n", packetIdentifier);
             auto jsp = CreateJSPacket(p);
             client->DeallocatePacket(p);
             //hexdump(p->data, p->length);

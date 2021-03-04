@@ -38,6 +38,11 @@ inline void FreeJSPacket(JSPacket* p) {
     delete p;
 }
 
+inline void FreeBuf(Napi::Env env, void* buf, JSPacket* hint) {
+    FreeJSPacket((JSPacket*)hint);
+}
+
+
 // Hex tools
 
 unsigned char GetPacketIdentifier2(RakNet::Packet* p); // get first byte of packet
