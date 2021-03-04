@@ -1,0 +1,75 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node Native Build CI
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - v*
+  pull_request:
+    branches: [ master ]
+  # Run on new tags
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [14.x]
+        
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm install
+    - run: npm run build --if-present
+    - run: npm test
+    - run: npm run postci
+      id: postci
+    # - name: Display structure of downloaded files
+    #   run: ls -R
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-${{ steps.postci.outputs.PLATFORM_STRING }}
+        path: |
+          build/Release/*
+#   debug:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Debug Action
+#       uses: hmarr/debug-action@v1.0.0
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags')
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+          registry-url: https://registry.npmjs.org/
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: helpers
+      - run: npm install
+        env: 
+          SKIP_BUILD: true
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      - name: Display structure of downloaded files
+        run: ls -R
