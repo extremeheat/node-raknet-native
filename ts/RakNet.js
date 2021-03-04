@@ -80,7 +80,11 @@ class Server extends EventEmitter {
             this.connections.set(guid, client)
             this.emit('openConnection', client)
           } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION) {
-            if (this.connections.has(guid)) this.connections.get(guid).neuter()
+            if (this.connections.has(guid)) {
+              const con = this.connections.get(guid)
+              this.emit('closeConnection', con)
+              con.neuter()
+            }
             this.connections.delete(guid)
           }
         } else { // User messages

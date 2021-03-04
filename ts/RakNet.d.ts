@@ -11,6 +11,6 @@ export declare class RakClient {
 export declare class RakServer {
   constructor(hostname: string, port: number, options: ServerOptions)
   listen(packetCallback: (buffer: ArrayBuffer, address: string, guid: string) => void): void;
-  send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
+  send(address: string, port: number, message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
   close()
 }
