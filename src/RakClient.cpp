@@ -13,7 +13,7 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-//#define printf
+#define printf
 
 // JS Bindings
 Napi::Object RakClient::Initialize(Napi::Env& env, Napi::Object& exports) {
@@ -82,18 +82,21 @@ void RakClient::Setup() {
     client->Startup(8, &socketDescriptor, 1);
 }
 
+void FreeBuf1(Napi::Env env, void* buf, JSPacket* hint) {
+    FreeJSPacket((JSPacket*)hint);
+}
+
 void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [this](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
+    auto callback = [this](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
         //hexdump(data->data, data->length);
         jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length),
+            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf1, data),
             Napi::String::From(env, data->systemAddress.ToString(true, '/')),
             Napi::String::From(env, data->guid.ToString())
         });
-        client->DeallocatePacket(data);
     };
 
     // Holds packets
@@ -102,11 +105,12 @@ void RakClient::RunLoop() {
     while (context->running && client->IsActive()) {
         RakSleep(30);
         while (p = client->Receive()) {
-            RakNet::Packet* pr = p;
             auto packetIdentifier = GetPacketIdentifier2(p);
             printf("Got packet ID: %d\n", packetIdentifier);
+            auto jsp = CreateJSPacket(p);
+            client->DeallocatePacket(p);
             //hexdump(p->data, p->length);
-            auto status = context->tsfn.BlockingCall(pr, callback);
+            auto status = context->tsfn.NonBlockingCall(jsp, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
             }
@@ -187,5 +191,6 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
 }
 
 void RakClient::Close(const Napi::CallbackInfo& info) {
+    if (this->context) context->running = false;
     if (this->client) this->client->Shutdown(600);
 }

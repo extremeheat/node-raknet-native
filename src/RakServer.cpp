@@ -13,7 +13,7 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-//#define printf
+#define printf
 
 Napi::Object RakServer::Initialize(Napi::Env& env, Napi::Object& exports) {
     Napi::Function func = DefineClass(env, "RakServer", {
@@ -52,19 +52,23 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     }
 }
 
+void FreeBuf2(Napi::Env env, void *buf, JSPacket*hint) {
+    FreeJSPacket((JSPacket*)hint);
+}
+
 void RakServer::RunLoop() {
     auto client = ctx->rakPeer;
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [client](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
+    auto callback = [&](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
         //hexdump(data->data, data->length);
         jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length),
+            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf2, data),
             Napi::String::From(env, data->systemAddress.ToString(true, '/')),
             Napi::String::From(env, data->guid.ToString())
         });
-        client->DeallocatePacket(data);
+        //FreeJSPacket(data);
     };
 
     // Holds packets
@@ -73,10 +77,11 @@ void RakServer::RunLoop() {
     while (ctx->running && client->IsActive()) {
         RakSleep(30);
         while (p = client->Receive()) {
-            RakNet::Packet* pr = p;
             auto packetIdentifier = GetPacketIdentifier2(p);
             printf("server Got packet ID: %d\n", packetIdentifier);
-            auto status = ctx->tsfn.BlockingCall(pr, callback);
+            auto jsp = CreateJSPacket(p);
+            client->DeallocatePacket(p);
+            auto status = ctx->tsfn.NonBlockingCall(jsp, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakServer failed to emit packet to JS: %d\n", status);
             }
@@ -190,5 +195,5 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
 
 void RakServer::Close(const Napi::CallbackInfo& info) {
     if (ctx) ctx->running = false;
-    if (server) server->Shutdown(600);
+    if (server) server->Shutdown(300);
 }
