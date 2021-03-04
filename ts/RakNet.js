@@ -1,8 +1,6 @@
-var SegfaultHandler = require('segfault-handler')
-SegfaultHandler.registerHandler("crash.log")
-const { RakClient, RakServer } = require('bindings')('node-raknet.node')
+const { RakClient, RakServer } = require('../binding')
 const { EventEmitter } = require('events')
-const { PacketPriority, PacketReliability, MessageID } = require('./Constants')
+const { MessageID } = require('./Constants')
 
 class Client extends EventEmitter {
   constructor(hostname, port, game = 'minecraft') {
@@ -53,9 +51,8 @@ function ServerClient(server, address) {
   const [hostname, port] = address.split('/')
   this.address = address
   this.send = (...args) => server.send(hostname, port, ...args)
-  this.addEncapsulatedToQueue = this.send // For back-compat with JSRakNet
 
-  this.neuter = () => { // Client is disconnected, no-op to block sending with valid ref
+  this.neuter = () => { // Client is disconnected, no-op to block sending
     this.send = () => { }
   }
 }
