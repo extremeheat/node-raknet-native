@@ -2,10 +2,10 @@
 
 #include <napi.h>
 #include "RakPeerInterface.h"
+#include "Util.h"
 
 struct ServerOptions {
     int maxConnections = 4;
-
     std::string serverMessage;
 };
 
@@ -17,14 +17,16 @@ private:
     std::string hostname;
     int port = -1;
     RakNet::SystemAddress conAddr;
-
     ServerOptions options;
+    TsfnContext* ctx = nullptr;
 public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);
     // Constructor
     RakServer(const Napi::CallbackInfo& info);
+    // RAKNET LOOP
+    void RunLoop();
     // Start connection
-    void Listen(const Napi::CallbackInfo& info);
+    Napi::Value Listen(const Napi::CallbackInfo& info);
     // Send an Encapsulated raknet packet
     Napi::Value SendEncapsulated(const Napi::CallbackInfo& info);
 
@@ -34,9 +36,11 @@ public:
     void Close(const Napi::CallbackInfo& info);
     // Called by garbage collector, we don't have to worry about it
     ~RakServer() {
+        printf("server SHUTTING DOWN\n");
         if (server) {
-            server->Shutdown(300);
+            server->Shutdown(500);
             RakNet::RakPeerInterface::DestroyInstance(server);
+            server = nullptr;
         }
     }
 };

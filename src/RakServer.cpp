@@ -13,41 +13,7 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-#include "Util.h"
-
-void RakServerLoop(TsfnContext* ctx) {
-    auto client = ctx->rakPeer;
-    // This callback transforms the native addon data (int *data) to JavaScript
-    // values. It also receives the treadsafe-function's registered callback, and
-    // may choose to call it.
-    auto callback = [client](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
-        auto buffer = Napi::ArrayBuffer::New(env, data->data, data->length);
-        auto addr = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
-        jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length),
-            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
-            Napi::String::From(env, data->guid.ToString())
-        });
-        client->DeallocatePacket(data);
-    };
-
-    // Holds packets
-    RakNet::Packet* p = 0;
-    RakNet::SystemAddress clientID;
-    while (ctx->running) {
-        RakSleep(30);
-        for (p = client->Receive(); p; p = client->Receive()) {
-            // We got a packet, get the identifier with our handy function
-            auto packetIdentifier = GetPacketIdentifier2(p);
-            printf("Got packet ID: %d\n", packetIdentifier);
-
-            auto status = ctx->tsfn.BlockingCall(p, callback);
-            if (status != napi_ok) {
-                fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
-            }
-        }
-    }
-}
+//#define printf
 
 Napi::Object RakServer::Initialize(Napi::Env& env, Napi::Object& exports) {
     Napi::Function func = DefineClass(env, "RakServer", {
@@ -86,11 +52,50 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     }
 }
 
-void RakServer::Listen(const Napi::CallbackInfo& info) {
+void RakServer::RunLoop() {
+    auto client = ctx->rakPeer;
+    // This callback transforms the native addon data (int *data) to JavaScript
+    // values. It also receives the treadsafe-function's registered callback, and
+    // may choose to call it.
+    auto callback = [client](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
+        auto buffer = Napi::ArrayBuffer::New(env, data->data, data->length);
+        auto addr = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
+        jsCallback.Call({
+            Napi::ArrayBuffer::New(env, data->data, data->length),
+            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
+            Napi::String::From(env, data->guid.ToString())
+        });
+        client->DeallocatePacket(data);
+    };
+
+    // Holds packets
+    RakNet::Packet* p = 0;
+    RakNet::SystemAddress clientID;
+    while (ctx->running && client->IsActive()) {
+        RakSleep(30);
+        while (p = client->Receive()) {
+            RakNet::Packet* pr = p;
+            // We got a packet, get the identifier with our handy function
+            auto packetIdentifier = GetPacketIdentifier2(p);
+            printf("server Got packet ID: %d\n", packetIdentifier);
+
+            auto status = ctx->tsfn.BlockingCall(pr, callback);
+            if (status != napi_ok) {
+                fprintf(stderr, "RakServer failed to emit packet to JS: %d\n", status);
+            }
+        }
+    }
+    printf("server RELEASING\n");
+    // Release the thread-safe function. This decrements the internal thread
+    // count, and will perform finalization since the count will reach 0.
+    ctx->tsfn.Release();
+}
+
+Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
-        return;
+        return Napi::Boolean::New(env, false);
     }
     auto eventHandler = info[0].As<Napi::Function>();
 
@@ -126,24 +131,27 @@ void RakServer::Listen(const Napi::CallbackInfo& info) {
     }
 
     // Construct context data
-    auto context = new TsfnContext(env);
-    context->rakPeer = server;
-    printf("Created ctx\n");
+    ctx = new TsfnContext(env);
+    ctx->rakPeer = server;
+    printf("Server Created ctx\n");
     // Create a new ThreadSafeFunction.
-    context->tsfn =
+    ctx->tsfn =
         Napi::ThreadSafeFunction::New(env, // Environment
             eventHandler, // JS function from caller
             "RakServer", // Resource name
             0, // Max queue size (0 = unlimited).
             1, // Initial thread count
-            context, // Context,
+            ctx, // Context,
             FinalizerCallback, // Finalizer
             (void*)nullptr    // Finalizer data
         );
     //printf("tsfn\n");
-    context->nativeThread = std::thread(RakServerLoop, context);
-    //printf("All good!\n");
-    return;
+    ctx->nativeThread = std::thread(&RakServer::RunLoop, this);
+    printf("server All good!\n");
+
+    //auto refCount = this->Ref(); // Force increment the ref count to avoid gc
+    //printf("Ref count:%d\n", refCount); 
+    return ctx->deferred.Promise();
 }
 
 Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
@@ -177,13 +185,20 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
         return Napi::Number::New(env, -(int)state);
     }
 
+    hexdump(buffer.Data(), buffer.ByteLength());
+
     auto ret = server->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority, (PacketReliability)reliability, (char)orderChannel, addr, broadcast);
     return Napi::Number::New(env, ret);
 }
 
 void RakServer::Close(const Napi::CallbackInfo& info) {
-    std::this_thread::sleep_for(std::chrono::seconds(200));
+    //auto refCount = this->Unref(); // De-refrence so this can be GC'ed
+    //printf("New Ref count %d\n", refCount);
+
+    /*std::this_thread::sleep_for(std::chrono::seconds(200));
     auto cb = info[0].As<Napi::Function>();
 
-    cb.Call(info.This(), { Napi::String::New(info.Env(), "Hello world!") });
+    cb.Call(info.This(), { Napi::String::New(info.Env(), "Hello world!") });*/
+    if (ctx) ctx->running = false;
+    if (server) server->Shutdown(600);
 }

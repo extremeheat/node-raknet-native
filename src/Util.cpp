@@ -5,6 +5,8 @@ void FinalizerCallback(Napi::Env env, void* finalizeData, TsfnContext* context) 
     context->running = false;
     // Join the thread
     context->nativeThread.join();
+    // Resolve the Promise previously returned to JS via the CreateTSFN method.
+    context->deferred.Resolve(Napi::Boolean::New(env, true));
     delete context;
 }
 

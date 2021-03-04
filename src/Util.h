@@ -7,7 +7,8 @@
 
 // Holds the context for our RakNet thread
 struct TsfnContext {
-    TsfnContext(Napi::Env env) {};
+    TsfnContext(Napi::Env env) : deferred(Napi::Promise::Deferred::New(env)) {};
+    Napi::Promise::Deferred deferred; // Don't allow JS to gc until server is closed
     bool running = true;
     RakNet::RakPeerInterface* rakPeer = nullptr;
     std::thread nativeThread;

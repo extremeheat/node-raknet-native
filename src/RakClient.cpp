@@ -13,46 +13,12 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-// RakNet thread
-void RakClientLoop(TsfnContext *ctx) {
-    auto client = ctx->rakPeer;
-
-    // This callback transforms the native addon data (int *data) to JavaScript
-    // values. It also receives the treadsafe-function's registered callback, and
-    // may choose to call it.
-    auto callback = [client](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
-        auto buffer = Napi::ArrayBuffer::New(env, data->data, data->length);
-        auto addr = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
-        hexdump(data->data, data->length);
-        jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length),
-            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
-            Napi::String::From(env, data->guid.ToString())
-        });
-        client->DeallocatePacket(data);
-    };
-
-    // Holds packets
-    RakNet::Packet* p = 0;
-    RakNet::SystemAddress clientID ;
-    while (ctx->running) {
-        RakSleep(30);
-        for (p = client->Receive(); p; p = client->Receive()) {
-            // We got a packet, get the identifier with our handy function
-            auto packetIdentifier = GetPacketIdentifier2(p);
-            printf("Got packet ID: %d\n", packetIdentifier);
-            hexdump(p->data, p->length);
-            auto status = ctx->tsfn.BlockingCall(p, callback);
-            if (status != napi_ok) {
-                fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
-            }
-        }
-    }
-}
+#define printf
 
 // JS Bindings
 Napi::Object RakClient::Initialize(Napi::Env& env, Napi::Object& exports) {
-    Napi::Function func = DefineClass(env, "RakClient", { 
+    Napi::Function func = DefineClass(env, "RakClient", {
+        InstanceMethod("listen", &RakClient::Listen),
         InstanceMethod("connect", &RakClient::Connect),
         InstanceMethod("send", &RakClient::SendEncapsulated),
         InstanceMethod("ping", &RakClient::Ping),
@@ -116,22 +82,53 @@ void RakClient::Setup() {
     client->Startup(8, &socketDescriptor, 1);
 }
 
-void RakClient::Connect(const Napi::CallbackInfo& info) {
+void RakClient::RunLoop() {
+    // This callback transforms the native addon data (int *data) to JavaScript
+    // values. It also receives the treadsafe-function's registered callback, and
+    // may choose to call it.
+    auto callback = [this](Napi::Env env, Napi::Function jsCallback, RakNet::Packet* data) {
+        auto buffer = Napi::ArrayBuffer::New(env, data->data, data->length);
+        auto addr = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
+        hexdump(data->data, data->length);
+        jsCallback.Call({
+            Napi::ArrayBuffer::New(env, data->data, data->length),
+            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
+            Napi::String::From(env, data->guid.ToString())
+            });
+        client->DeallocatePacket(data);
+    };
+
+    // Holds packets
+    RakNet::Packet* p = 0;
+    RakNet::SystemAddress clientID;
+    while (context->running && client->IsActive()) {
+        RakSleep(30);
+        for (p = client->Receive(); p; p = client->Receive()) {
+            // We got a packet, get the identifier with our handy function
+            auto packetIdentifier = GetPacketIdentifier2(p);
+            printf("Got packet ID: %d\n", packetIdentifier);
+            //hexdump(p->data, p->length);
+            auto status = context->tsfn.BlockingCall(p, callback);
+            if (status != napi_ok) {
+                fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
+            }
+        }
+    }
+    // Release the thread-safe function. This decrements the internal thread
+    // count, and will perform finalization since the count will reach 0.
+    context->tsfn.Release();
+}
+
+Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
-        return;
+        return Napi::Boolean::New(env, false);
     }
     auto eventHandler = info[0].As<Napi::Function>();
 
-    auto car = client->Connect(this->hostname.c_str(), this->port, "", 0);
-    if (car != RakNet::CONNECTION_ATTEMPT_STARTED) {
-        Napi::Error::New(env, "Unable to connect to " + std::to_string(this->port) + " - " + std::to_string(car)).ThrowAsJavaScriptException();
-        return;
-    }
-
     // Construct context data
-    auto context = new TsfnContext(env);
+    context = new TsfnContext(env);
     context->rakPeer = client;
     printf("Created ctx\n");
     // Create a new ThreadSafeFunction.
@@ -146,10 +143,19 @@ void RakClient::Connect(const Napi::CallbackInfo& info) {
             (void*)nullptr    // Finalizer data
         );
     //printf("tsfn\n");
-    context->nativeThread = std::thread(RakClientLoop, context);
+    context->nativeThread = std::thread(&RakClient::RunLoop, this);
     //printf("All good!\n");
     this->context = context;
-    return;
+    return context->deferred.Promise();
+}
+
+void RakClient::Connect(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    auto car = client->Connect(this->hostname.c_str(), this->port, "", 0);
+    if (car != RakNet::CONNECTION_ATTEMPT_STARTED) {
+        Napi::Error::New(env, "Unable to connect to " + std::to_string(this->port) + " - " + std::to_string(car)).ThrowAsJavaScriptException();
+        return;
+    }
 }
 
 void RakClient::Ping(const Napi::CallbackInfo& info) {
@@ -176,15 +182,17 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
     if (state != RakNet::IS_CONNECTED) {
         return Napi::Number::New(env, -(int)state);
     }
-    hexdump(buffer.Data(), buffer.ByteLength());
+    //hexdump(buffer.Data(), buffer.ByteLength());
     auto ret = client->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority, (PacketReliability)reliability, (char)orderChannel, this->conAddr, broadcast);
     if (ret == 0)printf("Bad input!\n");
     return Napi::Number::New(env, ret);
 }
 
 void RakClient::Close(const Napi::CallbackInfo& info) {
-    std::this_thread::sleep_for(std::chrono::seconds(200));
+    /*std::this_thread::sleep_for(std::chrono::seconds(200));
     auto cb = info[0].As<Napi::Function>();
 
-    cb.Call(info.This(), { Napi::String::New(info.Env(), "Hello world!") });
+    cb.Call(info.This(), { Napi::String::New(info.Env(), "Hello world!") });*/
+
+    if (this->client) this->client->Shutdown(600);
 }
