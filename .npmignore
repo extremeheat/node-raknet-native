@@ -1,0 +1,8 @@
+js/
+node_modules/
+build/
+.github/
+raknet/*
+!raknet/CMakeLists.txt
+!raknet/Source
+!raknet/Lib
