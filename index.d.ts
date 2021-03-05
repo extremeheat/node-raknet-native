@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events'
 import { PacketPriority, PacketReliability, ServerOptions } from './ts/Constants';
 
-export class Client extends EventEmitter {
+export declare class Client extends EventEmitter {
     constructor(hostname: string, port: number, game?: string)
     ping(): void
     connect(): Promise<void>
@@ -14,12 +14,12 @@ export class Client extends EventEmitter {
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
 }
 
-export class ServerClient {
-    close():void
+export declare class ServerClient {
+    close(): void
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
 }
 
-export class Server {
+export declare class Server {
     constructor(hostname: string, port: number, options: ServerOptions)
     connections: Map<string, Server>
     listen(): Promise<void>
@@ -28,4 +28,17 @@ export class Server {
     on(event: 'openConnection', params: (client: ServerClient) => void)
     on(event: 'closeConnection', params: (cient: ServerClient) => void)
     close(): void
+}
+
+export declare class McPingMessage {
+    motd: string
+    name: string
+    protocol: number
+    version: string
+    players: {
+        online: number,
+        max: number
+    }
+    gamemode: string
+    serverId: string
 }

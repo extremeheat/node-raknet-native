@@ -81,10 +81,10 @@ var done = false
 async function runTests() {
   console.info('🔵 Running ping test')
   await pingTest()
-  console.info('🟢 Passed, OK')
+  console.info('✔ Passed, OK')
   console.info('🔵 Running connection test')
   await connectTest()
-  console.info('🟢 Passed, OK')
+  console.info('✔ Passed, OK')
   done = true
 }
 

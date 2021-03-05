@@ -5,5 +5,5 @@ module.exports = {
   RakClient: bindings.RakClient,
   RakServer: bindings.RakServer,
   Client, Server, MessageID, PacketPriority, PacketReliability,
-  mcPingMessage: require('./ts/mcPingMessage')
+  McPingMessage: require('./ts/mcPingMessage')
 }

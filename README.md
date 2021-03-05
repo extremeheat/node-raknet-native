@@ -4,7 +4,7 @@ Native RakNet bindings for Node.js
 ## Install
 
 ```sh
-npm install extremeheat/node-raknet-native
+npm install raknet-native
 ```
 
 Prebuilds are provided for 64-bit Windows 10, Linux and macOS Catalina. If a prebuild does not work, create an issue and set enviornment variable FORCE_BUILD to force a manual build.
@@ -54,6 +54,7 @@ const client = new RakClient('127.0.0.1', 19130, 'minecraft')
 const server = new RakServer('0.0.0.0', 19130, { maxConnections: 3, minecraft: { message: new MCPingMessage().toString() }  })
 ```
 
+For more usage examples see tests/.
 
 ### Exported API
 ```ts
