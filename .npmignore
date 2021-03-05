@@ -3,6 +3,7 @@ node_modules/
 build/
 .github/
 raknet/*
+!raknet/CmakeIncludes/
 !raknet/CMakeLists.txt
 !raknet/Source
 !raknet/Lib
