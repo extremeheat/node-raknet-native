@@ -30,6 +30,8 @@ public:
     // Send an Encapsulated raknet packet
     Napi::Value SendEncapsulated(const Napi::CallbackInfo& info);
 
+    void SetPongResponse(const Napi::CallbackInfo& info);
+
     //Napi::Value GetConnectionsCount(const Napi::CallbackInfo& info);
 
     //void Kick(const Napi::CallbackInfo& info);

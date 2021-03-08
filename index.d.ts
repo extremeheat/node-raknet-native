@@ -90,6 +90,10 @@ export declare class Server {
      */
     send(address: string, port: number, message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
     /**
+     * Sets additional data to be sent along with RakNet's unconnected pong packet
+     */
+    setOfflineMessage(buffer: Buffer | ArrayBuffer)
+    /**
      * Recieve an actual user packet.
      * `address` is the address of the connected user, `guid` is a UUID. You can map this to a `connection` above.
      */

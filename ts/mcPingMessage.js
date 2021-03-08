@@ -23,4 +23,12 @@ module.exports = class ServerName {
             this.gamemode
         ].join(';') + ';'
     }
+
+    toBuffer() {
+        const str = Buffer.from(this.toString())
+        const buf = Buffer.alloc(str.length + 2)
+        str.copy(buf, 2)
+        buf.writeUInt16BE(str.length, 0)
+        return buf
+    }
 }

@@ -19,7 +19,8 @@ Napi::Object RakServer::Initialize(Napi::Env& env, Napi::Object& exports) {
     Napi::Function func = DefineClass(env, "RakServer", {
         InstanceMethod("listen", &RakServer::Listen),
         InstanceMethod("send", &RakServer::SendEncapsulated),
-        InstanceMethod("close", &RakServer::Close)
+        InstanceMethod("close", &RakServer::Close),
+        InstanceMethod("setPongResponse", &RakServer::SetPongResponse)
     });
 
     Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -46,10 +47,10 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
 
     if (options.Has("maxConnections")) this->options.maxConnections = options.Get("maxConnections").As<Napi::Number>();
     if (options.Has("minecraft")) {
-        auto mc = options.Get("minecraft").As<Napi::Object>();
         SetRakNetProtocolVersion(10);
-        this->options.serverMessage = mc.Get("message").As<Napi::String>();
     }
+    
+    server = RakNet::RakPeerInterface::GetInstance();
 }
 
 void RakServer::RunLoop() {
@@ -97,10 +98,8 @@ Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
     }
     auto eventHandler = info[0].As<Napi::Function>();
 
-    server = RakNet::RakPeerInterface::GetInstance();
     server->SetTimeoutTime(30000, RakNet::UNASSIGNED_SYSTEM_ADDRESS);
     server->SetMaximumIncomingConnections(this->options.maxConnections);
-    server->SetOfflinePingResponse(this->options.serverMessage.c_str(), this->options.serverMessage.length());
 
     DataStructures::List< RakNet::RakNetSocket2* > sockets;
     server->GetSockets(sockets);
@@ -116,15 +115,14 @@ Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
     socketDescriptors[1].socketFamily = AF_INET6;
     //TODO: fix ipv6
     bool b = server->Startup(4, socketDescriptors, 2) == RakNet::RAKNET_STARTED;
-    server->SetMaximumIncomingConnections(4);
     if (!b) {
         printf("Failed to start dual IPV4 and IPV6 ports. Trying IPV4 only.\n");
 
         // Try again, but leave out IPV6
         b = server->Startup(4, socketDescriptors, 1) == RakNet::RAKNET_STARTED;
         if (!b) {
-            puts("Server failed to start.  Terminating.");
-            exit(1);
+            Napi::TypeError::New(env, "Server failed to start").ThrowAsJavaScriptException();
+            return Napi::Boolean::New(env, false);
         }
     }
 
@@ -187,6 +185,18 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
 
     auto ret = server->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority, (PacketReliability)reliability, (char)orderChannel, addr, broadcast);
     return Napi::Number::New(env, ret);
+}
+
+void RakServer::SetPongResponse(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 1 || !server) {
+        Napi::TypeError::New(env, "Wrong number of arguments or needs init").ThrowAsJavaScriptException();
+        return;
+    }
+
+    auto buffer = info[0].As<Napi::ArrayBuffer>();
+    //hexdump((void*)buffer.Data(), buffer.ByteLength());
+    server->SetOfflinePingResponse((const char*)buffer.Data(), buffer.ByteLength());
 }
 
 void RakServer::Close(const Napi::CallbackInfo& info) {

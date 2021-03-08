@@ -71,10 +71,17 @@ class Server extends EventEmitter {
     this.server = new RakServer(hostname, port, options)
     this.close = () => this.server.close()
     this.connections = new Map()
-    this.waiting = 0
+    this.setOfflineMessage(options.message)
   }
 
-  // TODO: setOfflineMessage instead of the mc-specific things
+  setOfflineMessage(message) {
+    if (!message) return
+    if (message instanceof Buffer) {
+      if (message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
+      else message = message.buffer
+    }
+    this.server.setPongResponse(message)
+  }
 
   listen() {
     return this.server.listen((buffer, address, guid) => {
