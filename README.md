@@ -27,15 +27,21 @@ xcode-select --install
 ```
 
 ## Usage
+
+#### class Client, Server
+
+The Client and Server classes are a JS wrappers around the internal RakClient and RakServer classes implemented in C++ in src/. See the ts/RakNet.js for usage.
+
+#### Example
+
 A simple generic RakNet example:
 
 ```ts
 const { Client, Server, PacketPriority, PacketReliability } = require('raknet-native')
-// hostname, port, optionalGameType
 // The third paramater is for game type, you can specify 'minecraft' or leave it blank for generic RakNet
-const client = new RakClient('127.0.0.1', 19130)
+const client = new Client('127.0.0.1', 19130)
 // hostname, port, serverOptions
-const server = new RakServer('0.0.0.0', 19130, { maxConnections: 3 })
+const server = new Server('0.0.0.0', 19130, { maxConnections: 3 })
 server.listen()
 client.connect()
 client.on('encapsulated', (buffer) => {
@@ -50,39 +56,98 @@ server.on('openConnection', (client) => {
 For Minecraft Bedrock, use:
 ```ts
 const { Client, Server, PacketPriority, MCPingMessage } = require('raknet-native')
-const client = new RakClient('127.0.0.1', 19130, 'minecraft')
-const server = new RakServer('0.0.0.0', 19130, { maxConnections: 3, minecraft: { message: new MCPingMessage().toString() }  })
+const client = new Client('127.0.0.1', 19130, 'minecraft')
+const server = new Server('0.0.0.0', 19130, { maxConnections: 3, minecraft: { message: new MCPingMessage().toString() }  })
 ```
 
 For more usage examples see tests/.
 
 ### Exported API
+See index.d.ts for full API docs.
+
 ```ts
-export class Client extends EventEmitter {
+export declare class Client extends EventEmitter {
     constructor(hostname: string, port: number, game?: string)
+    /**
+     * Send a RakNet PING request to the server
+     */
     ping(): void
+    /**
+     * Start a connection request with the server using host and port passed in constructor
+     */
     connect(): Promise<void>
-    close(): void
-
+    /**
+     * Recieve a PING event from the server, the extra field with the additional pong data
+     */
     on(event: 'pong', params: ({ extra: Buffer }) => void)
-    on(event: 'encapsulated', params: ({ buffer: Buffer }) => void)
+    /**
+     * The client has connected
+     */
+    on(event: 'connected', params: (data: { address: string, guid: string }) => void)
+    /**
+     * The client has been disconnected
+     */
+    on(event: 'disconnected', params: (data: { address: string, guid: string, reason: MessageID }) => void)
+    /**
+     * Recieve an actual user packet.
+     */
+    on(event: 'encapsulated', params: (data: { buffer: Buffer, address: string, guid: string }) => void)
+    /**
+     * Send a message to the server.
+     * @param message The message you want to send to the server
+     * @param priority The priority, which dicates if message should be sent now or queued
+     * @param reliability Options to ensure a packet arrives to the recipient
+     * @param orderingChannel The RakNet ordering channel, used only for ReliableOrdered packets
+     */
+    send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
+    /**
+     * Closes the connection. This is a *blocking* call.
+     */
+    close(): void
+}
 
+export declare class ServerClient {
+    close(): void
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
 }
 
-export class ServerClient {
-    close():void
-    send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
-}
-
-export class Server {
+export declare class Server {
     constructor(hostname: string, port: number, options: ServerOptions)
+    /**
+     * The list of connections tracked by RakNet at the moment. The string key is the GUID.
+     */
     connections: Map<string, Server>
+    /**
+     * Start listening on the specified host and port
+     */
     listen(): Promise<void>
+    /**
+     * Send a message to the client.
+     * @param address The address of the client you want to send to
+     * @param port The port of the client you want to send to
+     * @param message The message you want to send to the client
+     * @param priority The priority, which dicates if message should be sent now or queued
+     * @param reliability Options to ensure a packet arrives to the recipient
+     * @param orderingChannel The RakNet ordering channel, used only for ReliableOrdered packets
+     * @param broadcast Send to all clients? If true, send to all clients except `address` and `port`.
+     */
     send(address: string, port: number, message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
-    on(event: 'encapsulated', params: ({ buffer: Buffer }) => void)
+    /**
+     * Recieve an actual user packet.
+     * `address` is the address of the connected user, `guid` is a UUID. You can map this to a `connection` above.
+     */
+    on(event: 'encapsulated', params: (data: { buffer: Buffer, address: string, guid: string }) => void)
+    /**
+     * Emited on a new connection, with a `ServerClient` paramater to make it easier to send messages to this user.
+     */
     on(event: 'openConnection', params: (client: ServerClient) => void)
-    on(event: 'closeConnection', params: (cient: ServerClient) => void)
+    /**
+     * Emitted after a user closes a connection.
+     */
+    on(event: 'closeConnection', params: (client: ServerClient, reason: MessageID) => void)
+    /**
+     * Closes the connection. This is a *blocking* call.
+     */
     close(): void
 }
 ```

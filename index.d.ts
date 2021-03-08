@@ -1,17 +1,66 @@
-/// <reference path="./ts/RakNet.d.ts" />
 import { EventEmitter } from 'events'
-import { PacketPriority, PacketReliability, ServerOptions } from './ts/Constants';
+import { MessageID, PacketPriority, PacketReliability, ServerOptions } from './ts/Constants';
+
+
+/**
+ * Internal RakNet binding in native code. Avoid using it, use Client or Server wrappers instead.
+ */
+export declare class RakClient {
+    constructor(hostname: string, port: number, game?: string)
+    ping(): void
+    connect(packetCallback: (buffer: ArrayBuffer, address: string, guid: string) => void): void;
+    send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
+    close(): void
+}
+
+/**
+ * Internal RakNet binding in native code. Avoid using it, use Client or Server wrappers instead.
+ */
+export declare class RakServer {
+    constructor(hostname: string, port: number, options: ServerOptions)
+    listen(packetCallback: (buffer: ArrayBuffer, address: string, guid: string) => void): void;
+    send(address: string, port: number, message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
+    close()
+}
 
 export declare class Client extends EventEmitter {
     constructor(hostname: string, port: number, game?: string)
+    /**
+     * Send a RakNet PING request to the server
+     */
     ping(): void
+    /**
+     * Start a connection request with the server using host and port passed in constructor
+     */
     connect(): Promise<void>
-    close(): void
-
+    /**
+     * Recieve a PING event from the server, the extra field with the additional pong data
+     */
     on(event: 'pong', params: ({ extra: Buffer }) => void)
-    on(event: 'encapsulated', params: ({ buffer: Buffer }) => void)
-
+    /**
+     * The client has connected
+     */
+    on(event: 'connected', params: (data: { address: string, guid: string }) => void)
+    /**
+     * The client has been disconnected
+     */
+    on(event: 'disconnected', params: (data: { address: string, guid: string, reason: MessageID }) => void)
+    /**
+     * Recieve an actual user packet.
+     */
+    on(event: 'encapsulated', params: (data: { buffer: Buffer, address: string, guid: string }) => void)
+    /**
+     * Send a message to the server.
+     * @param message The message you want to send to the server
+     * @param priority The priority, which dicates if message should be sent now or queued
+     * @param reliability Options to ensure a packet arrives to the recipient
+     * @param orderingChannel The RakNet ordering channel, used only for ReliableOrdered packets
+     */
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
+    /**
+     * Closes the connection. This is a *blocking* call.
+     */
+    close(): void
 }
 
 export declare class ServerClient {
@@ -21,12 +70,41 @@ export declare class ServerClient {
 
 export declare class Server {
     constructor(hostname: string, port: number, options: ServerOptions)
+    /**
+     * The list of connections tracked by RakNet at the moment. The string key is the GUID.
+     */
     connections: Map<string, Server>
+    /**
+     * Start listening on the specified host and port
+     */
     listen(): Promise<void>
+    /**
+     * Send a message to the client.
+     * @param address The address of the client you want to send to
+     * @param port The port of the client you want to send to
+     * @param message The message you want to send to the client
+     * @param priority The priority, which dicates if message should be sent now or queued
+     * @param reliability Options to ensure a packet arrives to the recipient
+     * @param orderingChannel The RakNet ordering channel, used only for ReliableOrdered packets
+     * @param broadcast Send to all clients? If true, send to all clients except `address` and `port`.
+     */
     send(address: string, port: number, message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
-    on(event: 'encapsulated', params: ({ buffer: Buffer }) => void)
+    /**
+     * Recieve an actual user packet.
+     * `address` is the address of the connected user, `guid` is a UUID. You can map this to a `connection` above.
+     */
+    on(event: 'encapsulated', params: (data: { buffer: Buffer, address: string, guid: string }) => void)
+    /**
+     * Emited on a new connection, with a `ServerClient` paramater to make it easier to send messages to this user.
+     */
     on(event: 'openConnection', params: (client: ServerClient) => void)
-    on(event: 'closeConnection', params: (cient: ServerClient) => void)
+    /**
+     * Emitted after a user closes a connection.
+     */
+    on(event: 'closeConnection', params: (client: ServerClient, reason: MessageID) => void)
+    /**
+     * Closes the connection. This is a *blocking* call.
+     */
     close(): void
 }
 
@@ -42,3 +120,6 @@ export declare class McPingMessage {
     gamemode: string
     serverId: string
 }
+
+export { PacketPriority }
+export { PacketReliability }

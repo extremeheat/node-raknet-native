@@ -18,7 +18,7 @@ class Client extends EventEmitter {
     this.client.listen((buffer, address, guid) => {
       const buf = Buffer.from(buffer) // copy native buffer to js
       const id = buf[0]
-      // console.log('C -> ', buf, address, guid, recvC++)
+      // console.log('C -> ', buf, address, guid)
       try {
         if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
           if (id == MessageID.ID_UNCONNECTED_PONG) {
@@ -30,6 +30,12 @@ class Client extends EventEmitter {
               this.emit('pong', {})
             }
           }
+          if (id == MessageID.ID_CONNECTION_REQUEST_ACCEPTED) {
+            this.emit('connected', { address, guid })
+          }
+          if (id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_BANNED) {
+            this.emit('disconnected', { address, guid, reason: id })
+          }
         } else { // User messages
           this.emit('encapsulated', { buffer: buf, address, guid })
         }
@@ -40,6 +46,8 @@ class Client extends EventEmitter {
   }
 
   send(message, priority, reliability, orderingChannel = 0, broadcast = false) {
+    // When you Buffer.from/allocUnsafe, it may put your data into a global buffer, we need it in its own buffer
+    if (message instanceof Buffer && message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
     const ret = this.client.send(message instanceof ArrayBuffer ? message : message.buffer, priority, reliability, orderingChannel, broadcast)
     if (ret <= 0) {
       throw Error(`Failed to send: ${ret}`)
@@ -79,16 +87,16 @@ class Server extends EventEmitter {
             const client = new ServerClient(this, address)
             this.connections.set(guid, client)
             this.emit('openConnection', client)
-          } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION) {
+          } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST) {
             if (this.connections.has(guid)) {
               const con = this.connections.get(guid)
-              this.emit('closeConnection', con)
+              this.emit('closeConnection', con, id)
               con.neuter()
             }
             this.connections.delete(guid)
           }
         } else { // User messages
-          this.emit('encapsulated', { buffer: buf })
+          this.emit('encapsulated', { buffer: buf, address, guid })
         }
       } catch (e) { // If we don't handle this the program will segfault
         console.error('Server failed to read packet:', e)
@@ -97,6 +105,7 @@ class Server extends EventEmitter {
   }
 
   send(sendAddr, sendPort, message, priority, reliability, orderingChannel = 0, broadcast = false) {
+    if (message instanceof Buffer && message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
     // console.warn('SENDING', arguments)
     const ret = this.server.send(sendAddr, parseInt(sendPort), message instanceof ArrayBuffer ? message : message.buffer, priority, reliability, orderingChannel, broadcast)
     if (ret <= 0) {

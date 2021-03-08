@@ -20,8 +20,8 @@ if (pathToSearch) {
   try {
     bindings = require(rpath)
   } catch (e) {
-    console.log(e)
-    console.warn('[raknet] did not find lib in ', rpath)
+    debug(e)
+    debug('[raknet] did not find lib in ', rpath)
   }
 }
 if (!bindings) {
