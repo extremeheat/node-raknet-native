@@ -30,7 +30,7 @@ xcode-select --install
 
 #### class Client, Server
 
-The Client and Server classes are a JS wrappers around the internal RakClient and RakServer classes implemented in C++ in src/. See the ts/RakNet.js for usage.
+The Client and Server classes are JS wrappers around the internal RakClient and RakServer classes implemented in C++ in src/. See the ts/RakNet.js for usage.
 
 #### Example
 

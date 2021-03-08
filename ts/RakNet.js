@@ -33,7 +33,7 @@ class Client extends EventEmitter {
           if (id == MessageID.ID_CONNECTION_REQUEST_ACCEPTED) {
             this.emit('connected', { address, guid })
           }
-          if (id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_BANNED) {
+          if (id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_BANNED || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
             this.emit('disconnected', { address, guid, reason: id })
           }
         } else { // User messages
@@ -87,7 +87,7 @@ class Server extends EventEmitter {
             const client = new ServerClient(this, address)
             this.connections.set(guid, client)
             this.emit('openConnection', client)
-          } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST) {
+          } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
             if (this.connections.has(guid)) {
               const con = this.connections.get(guid)
               this.emit('closeConnection', con, id)

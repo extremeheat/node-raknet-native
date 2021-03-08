@@ -49,7 +49,7 @@ async function connectTest() {
     })
     var lastS = 0;
     server.on('encapsulated', (encap) => {
-      console.log('Server encap', encap)
+      // console.log('Server encap', encap)
       console.assert(encap.buffer[0] == 0xf0)
       const ix = encap.buffer[1]
       if (lastS++ !== ix) {
@@ -68,8 +68,8 @@ async function connectTest() {
         for (var j = 0; j < 64; j += 4) buf[j] = j + i
         buf[0] = 0xf0
         buf[1] = i
-        console.log('BUF', buf, buf.buffer)
-        console.log('i', i)
+        // console.log('BUF', buf, buf.buffer)
+        // console.log('i', i)
         client.send(buf, PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
       }
     })
