@@ -20,8 +20,19 @@ if (pathToSearch) {
   try {
     bindings = require(rpath)
   } catch (e) {
-    debug(e)
-    debug('[raknet] did not find lib in ', rpath)
+    const fb = helper.getFallbackPath()
+    if (fb) {
+      try {
+        bindings = require(rpath)
+      } catch (e1) {
+        debug('no fallback path', fb)
+        debug(e1)
+        process.exit(1)
+      }
+    } else {
+      debug(e)
+      debug('[raknet] did not find lib in ', rpath)
+    }
   }
 }
 if (!bindings) {
