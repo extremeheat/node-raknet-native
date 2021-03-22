@@ -14,27 +14,16 @@ if (!process.versions.electron) {
 }
 
 var bindings
-var pathToSearch = helper.getPath()
-if (pathToSearch) {
-  var rpath = path.join(__dirname, pathToSearch, '/node-raknet.node')
+var pathsToSearch = [helper.getPath()]
+for (const importPath of pathsToSearch) {
   try {
-    bindings = require(rpath)
+    bindings = require(importPath)
   } catch (e) {
-    const fb = helper.getFallbackPath()
-    if (fb) {
-      try {
-        bindings = require(rpath)
-      } catch (e1) {
-        debug('no fallback path', fb)
-        debug(e1)
-        process.exit(1)
-      }
-    } else {
-      debug(e)
-      debug('[raknet] did not find lib in ', rpath)
-    }
+    debug("Didn't find in", importPath)
+    debug(e)
   }
 }
+
 if (!bindings) {
   bindings = require('bindings')('node-raknet.node')
 }

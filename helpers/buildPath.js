@@ -1,6 +1,6 @@
 const fs = require('fs')
 const os = require('os')
-const path = require('path')
+const { join } = require('path')
 
 module.exports = {
   getPath() {
@@ -10,21 +10,21 @@ module.exports = {
     let arch = process.arch
     let ver = _osVersion.split('.', 1)
 
-    let bpath = `./prebuilds/${plat}-${ver}-${arch}/`
-    return bpath
+    let bpath = `../prebuilds/${plat}-${ver}-${arch}/`
+    return join(__dirname, bpath)
   },
 
   getFallbackPath() { // try to ignore OS version & load just on plat+arch
-    const dirs = fs.readdirSync('./prebuilds/')
+    const dirs = fs.readdirSync(join(__dirname, '../prebuilds/'))
     for (const dir of dirs) {
-      const [plat,ver,arch] = dir.split('-')
+      const [plat, ver, arch] = dir.split('-')
 
       if (plat === process.platform && arch === process.arch) {
-        return dir
+        return join(__dirname, '../prebuilds/', dir, '/node-raknet.node')
       }
     }
   },
-  
+
   getPlatformString() {
     let _osVersion = os.release()
 
