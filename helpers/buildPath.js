@@ -10,7 +10,7 @@ module.exports = {
     const arch = process.arch
     const ver = _osVersion.split('.', 1)
 
-    const bpath = `../prebuilds/${plat}-${ver}-${arch}/`
+    const bpath = `../prebuilds/${plat}-${ver}-${arch}/node-raknet.node`
     return join(__dirname, bpath)
   },
 
