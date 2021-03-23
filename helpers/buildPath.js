@@ -3,18 +3,18 @@ const os = require('os')
 const { join } = require('path')
 
 module.exports = {
-  getPath() {
-    let _osVersion = os.release()
+  getPath () {
+    const _osVersion = os.release()
 
-    let plat = process.platform
-    let arch = process.arch
-    let ver = _osVersion.split('.', 1)
+    const plat = process.platform
+    const arch = process.arch
+    const ver = _osVersion.split('.', 1)
 
-    let bpath = `../prebuilds/${plat}-${ver}-${arch}/`
+    const bpath = `../prebuilds/${plat}-${ver}-${arch}/`
     return join(__dirname, bpath)
   },
 
-  getFallbackPath() { // try to ignore OS version & load just on plat+arch
+  getFallbackPath () { // try to ignore OS version & load just on plat+arch
     const dirs = fs.readdirSync(join(__dirname, '../prebuilds/'))
     for (const dir of dirs) {
       const [plat, ver, arch] = dir.split('-')
@@ -25,12 +25,12 @@ module.exports = {
     }
   },
 
-  getPlatformString() {
-    let _osVersion = os.release()
+  getPlatformString () {
+    const _osVersion = os.release()
 
-    let plat = process.platform
-    let arch = process.arch
-    let ver = _osVersion.split('.', 1)
+    const plat = process.platform
+    const arch = process.arch
+    const ver = _osVersion.split('.', 1)
     return `${plat}-${ver}-${arch}`
   }
 }

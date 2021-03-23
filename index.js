@@ -4,6 +4,10 @@ const { MessageID, PacketReliability, PacketPriority } = require('./ts/Constants
 module.exports = {
   RakClient: bindings.RakClient,
   RakServer: bindings.RakServer,
-  Client, Server, MessageID, PacketPriority, PacketReliability,
+  Client,
+  Server,
+  MessageID,
+  PacketPriority,
+  PacketReliability,
   McPingMessage: require('./ts/mcPingMessage')
 }

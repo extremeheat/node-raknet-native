@@ -1,16 +1,16 @@
-var { Server, Client } = require('../ts/RakNet')
-var { MessageID, PacketPriority, PacketReliability } = require('../ts/Constants')
+const { Server, Client } = require('../ts/RakNet')
+const { MessageID, PacketPriority, PacketReliability } = require('../ts/Constants')
 const ServerName = require('../ts/mcPingMessage')
 
-async function pingTest() {
+async function pingTest () {
   return new Promise((res, rej) => {
     const message = new ServerName().toBuffer()
-    var server = new Server('0.0.0.0', 19130, {
+    const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
       minecraft: {},
       message
     })
-    var client = new Client('127.0.0.1', 19130, 'minecraft')
+    const client = new Client('127.0.0.1', 19130, 'minecraft')
 
     client.on('pong', (data) => {
       const msg = data.extra?.toString()
@@ -29,18 +29,18 @@ async function pingTest() {
   })
 }
 
-async function connectTest() {
+async function connectTest () {
   return new Promise((res, rej) => {
     const message = new ServerName().toBuffer()
-    var server = new Server('0.0.0.0', 19130, {
+    const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
       minecraft: {},
       message
     })
-    var client = new Client('127.0.0.1', 19130, 'minecraft')
+    const client = new Client('127.0.0.1', 19130, 'minecraft')
 
     server.listen()
-    var lastC = 0;
+    let lastC = 0
     client.on('encapsulated', (encap) => {
       console.assert(encap.buffer[0] == 0xf0)
       const ix = encap.buffer[1]
@@ -49,7 +49,7 @@ async function connectTest() {
       }
       client.send(encap.buffer, PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
     })
-    var lastS = 0;
+    let lastS = 0
     server.on('encapsulated', (encap) => {
       // console.log('Server encap', encap)
       console.assert(encap.buffer[0] == 0xf0)
@@ -67,7 +67,7 @@ async function connectTest() {
       console.debug('Client opened connection')
       for (let i = 0; i < 50; i++) {
         const buf = Buffer.alloc(1000)
-        for (var j = 0; j < 64; j += 4) buf[j] = j + i
+        for (let j = 0; j < 64; j += 4) buf[j] = j + i
         buf[0] = 0xf0
         buf[1] = i
         // console.log('BUF', buf, buf.buffer)
@@ -79,8 +79,8 @@ async function connectTest() {
   })
 }
 
-var done = false
-async function runTests() {
+let done = false
+async function runTests () {
   console.info('🔵 Running ping test')
   await pingTest()
   console.info('✔ Passed, OK')

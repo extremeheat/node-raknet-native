@@ -3,7 +3,7 @@ const { EventEmitter } = require('events')
 const { MessageID } = require('./Constants')
 
 class Client extends EventEmitter {
-  constructor(hostname, port, game = 'minecraft') {
+  constructor (hostname, port, game = 'minecraft') {
     super()
     this.client = new RakClient(hostname, port, game)
     this.ping = () => this.client.ping()
@@ -13,7 +13,7 @@ class Client extends EventEmitter {
   }
 
   // Handle inbound packets and emit events
-  startListening() {
+  startListening () {
     // var recvC = 0
     this.client.listen((buffer, address, guid) => {
       const buf = Buffer.from(buffer) // copy native buffer to js
@@ -46,7 +46,7 @@ class Client extends EventEmitter {
     })
   }
 
-  send(message, priority, reliability, orderingChannel = 0, broadcast = false) {
+  send (message, priority, reliability, orderingChannel = 0, broadcast = false) {
     // When you Buffer.from/allocUnsafe, it may put your data into a global buffer, we need it in its own buffer
     if (message instanceof Buffer && message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
     const ret = this.client.send(message instanceof ArrayBuffer ? message : message.buffer, priority, reliability, orderingChannel, broadcast)
@@ -56,7 +56,7 @@ class Client extends EventEmitter {
   }
 }
 
-function ServerClient(server, address) {
+function ServerClient (server, address) {
   const [hostname, port] = address.split('/')
   this.address = address
   this.send = (...args) => server.send(hostname, port, ...args)
@@ -67,7 +67,7 @@ function ServerClient(server, address) {
 }
 
 class Server extends EventEmitter {
-  constructor(hostname, port, options) {
+  constructor (hostname, port, options) {
     super()
     this.server = new RakServer(hostname, port, options)
     this.close = () => this.server.close()
@@ -75,7 +75,7 @@ class Server extends EventEmitter {
     this.setOfflineMessage(options.message)
   }
 
-  setOfflineMessage(message) {
+  setOfflineMessage (message) {
     if (!message) return
     if (message instanceof Buffer) {
       if (message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
@@ -84,7 +84,7 @@ class Server extends EventEmitter {
     this.server.setPongResponse(message)
   }
 
-  listen() {
+  listen () {
     return this.server.listen((buffer, address, guid) => {
       const buf = Buffer.from(buffer)
       // console.log('S -> ', buffer, address, guid)
@@ -113,7 +113,7 @@ class Server extends EventEmitter {
     })
   }
 
-  send(sendAddr, sendPort, message, priority, reliability, orderingChannel = 0, broadcast = false) {
+  send (sendAddr, sendPort, message, priority, reliability, orderingChannel = 0, broadcast = false) {
     if (message instanceof Buffer && message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
     // console.warn('SENDING', arguments)
     const ret = this.server.send(sendAddr, parseInt(sendPort), message instanceof ArrayBuffer ? message : message.buffer, priority, reliability, orderingChannel, broadcast)

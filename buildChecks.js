@@ -2,7 +2,7 @@
 const fs = require('fs')
 const cp = require('child_process')
 
-function checkIfPrebuildExists() {
+function checkIfPrebuildExists () {
   try {
     const bindings = require('./binding')
     if (!bindings) throw 'Bindings are undefined'
@@ -14,7 +14,7 @@ function checkIfPrebuildExists() {
   }
 }
 
-var runCmake = true
+let runCmake = true
 
 if (!process.env.FORCE_BUILD) {
   if (checkIfPrebuildExists()) {
@@ -25,18 +25,16 @@ if (process.env.SKIP_BUILD) {
   runCmake = false
 }
 
-async function runChecks() {
+async function runChecks () {
   if (!fs.existsSync('./raknet/Source')) {
-
     console.info('Cloning submodules...')
     cp.execSync('git submodule init', { stdio: 'inherit' })
     cp.execSync('git submodule update', { stdio: 'inherit' })
 
     if (!fs.existsSync('./raknet/Source')) { // npm install does not clone submodules...
-
       cp.execSync('git clone https://github.com/extremeheat/fb-raknet raknet') // so do it manually
 
-      if (!fs.existsSync('./raknet/Source')) { //gie up
+      if (!fs.existsSync('./raknet/Source')) { // give up
         console.error('******************* READ ME ****************\n')
         console.error(' Failed to install git submodules. Please create an issue at https://github.com/extremeheat/node-raknet-native\n')
         console.error('******************* READ ME ****************\n')
@@ -51,7 +49,7 @@ if (runCmake) {
     () => {
       console.log('Build checks are passing! Building...')
       // cp.execSync(`ls -R`, {stdio: 'inherit'})
-      cp.execSync(`cmake-js compile`, {stdio: 'inherit'})
+      cp.execSync('cmake-js compile', { stdio: 'inherit' })
     }
   )
 }
