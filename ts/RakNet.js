@@ -56,10 +56,12 @@ class Client extends EventEmitter {
   }
 }
 
-function ServerClient (server, address) {
+function ServerClient (server, address, guid) {
   const [hostname, port] = address.split('/')
   this.address = address
+  this.guid = guid
   this.send = (...args) => server.send(hostname, port, ...args)
+  this.close = (silent) => server.kick(guid, silent)
 
   this.neuter = () => { // Client is disconnected, no-op to block sending
     this.send = () => { }
@@ -92,7 +94,7 @@ class Server extends EventEmitter {
         const id = buf[0]
         if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
           if (id == MessageID.ID_NEW_INCOMING_CONNECTION) {
-            const client = new ServerClient(this, address)
+            const client = new ServerClient(this, address, guid)
             this.connections.set(guid, client)
             this.emit('openConnection', client)
           } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
@@ -120,6 +122,10 @@ class Server extends EventEmitter {
     if (ret <= 0) {
       throw Error(`Failed to send: ${ret}`)
     }
+  }
+
+  kick (clientGuid, silent) {
+    this.server.kick(clientGuid, silent)
   }
 }
 

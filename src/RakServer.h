@@ -34,7 +34,7 @@ public:
 
     //Napi::Value GetConnectionsCount(const Napi::CallbackInfo& info);
 
-    //void Kick(const Napi::CallbackInfo& info);
+    void Kick(const Napi::CallbackInfo& info);
     void Close(const Napi::CallbackInfo& info);
     // Called by garbage collector, we don't have to worry about it
     ~RakServer() {

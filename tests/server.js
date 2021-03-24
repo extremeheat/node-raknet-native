@@ -79,6 +79,35 @@ async function connectTest () {
   })
 }
 
+async function kickTest() {
+  return new Promise((res, rej) => {
+    const server = new Server('0.0.0.0', 19131, {
+      maxConnections: 3
+    })
+    const client = new Client('127.0.0.1', 19131, 'minecraft')
+
+    server.on('openConnection', (client) => {
+      console.log('new connection', client)
+      // client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
+      client.close()
+    })
+    server.listen()
+    client.on('disconnected', packet => {
+      console.log('clien got disconnect', packet)
+      try {
+        const ret = client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
+      } catch (e) {
+        console.log('Expected error', e)
+        server.close()
+        client.close()
+        res()
+      }
+    })
+    
+    client.connect()
+  })
+}
+
 let done = false
 async function runTests () {
   console.info('🔵 Running ping test')
@@ -87,10 +116,13 @@ async function runTests () {
   console.info('🔵 Running connection test')
   await connectTest()
   console.info('✔ Passed, OK')
+  console.info('🔵 Running kick test')
+  await kickTest()
+  console.info('✔ Passed, OK')
   done = true
 }
 
 runTests()
 setTimeout(() => {
   if (!done) throw Error('Timeout!')
-}, 3000)
+}, 5000)

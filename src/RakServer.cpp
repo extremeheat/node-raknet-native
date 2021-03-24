@@ -19,6 +19,7 @@ Napi::Object RakServer::Initialize(Napi::Env& env, Napi::Object& exports) {
     Napi::Function func = DefineClass(env, "RakServer", {
         InstanceMethod("listen", &RakServer::Listen),
         InstanceMethod("send", &RakServer::SendEncapsulated),
+        InstanceMethod("kick", &RakServer::Kick),        
         InstanceMethod("close", &RakServer::Close),
         InstanceMethod("setPongResponse", &RakServer::SetPongResponse)
     });
@@ -197,6 +198,21 @@ void RakServer::SetPongResponse(const Napi::CallbackInfo& info) {
     auto buffer = info[0].As<Napi::ArrayBuffer>();
     //hexdump((void*)buffer.Data(), buffer.ByteLength());
     server->SetOfflinePingResponse((const char*)buffer.Data(), buffer.ByteLength());
+}
+
+void RakServer::Kick(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 2) {
+        Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
+        return;
+    }
+
+    auto clientGuid = info[0].As<Napi::String>().Utf8Value();
+    auto silent = info[1].As<Napi::Boolean>().ToBoolean();
+
+    RakNet::RakNetGUID clientAddress;
+    clientAddress.FromString(clientGuid.c_str());
+    server->CloseConnection(clientAddress, !silent);
 }
 
 void RakServer::Close(const Napi::CallbackInfo& info) {
