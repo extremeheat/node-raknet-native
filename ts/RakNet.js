@@ -15,33 +15,35 @@ class Client extends EventEmitter {
   // Handle inbound packets and emit events
   startListening () {
     // var recvC = 0
-    this.client.listen((buffer, address, guid) => {
-      const buf = Buffer.from(buffer) // copy native buffer to js
-      const id = buf[0]
-      // console.log('C -> ', buf, address, guid)
-      try {
-        if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
-          if (id == MessageID.ID_UNCONNECTED_PONG) {
-            if (buf.byteLength > 5) {
-              const extra = Buffer.from(buf.slice(5))
-              console.log('Extra', extra.toString())
-              this.emit('pong', { extra })
-            } else {
-              this.emit('pong', {})
+    this.client.listen((buffers, address, guid) => {
+      for (const buffer of buffers) {
+        const buf = Buffer.from(buffer) // copy native buffer to js
+        const id = buf[0]
+        // console.log('C -> ', buf, address, guid)
+        try {
+          if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
+            if (id == MessageID.ID_UNCONNECTED_PONG) {
+              if (buf.byteLength > 5) {
+                const extra = Buffer.from(buf.slice(5))
+                console.log('Extra', extra.toString())
+                this.emit('pong', { extra })
+              } else {
+                this.emit('pong', {})
+              }
             }
+            if (id == MessageID.ID_CONNECTION_REQUEST_ACCEPTED) {
+              this.emit('connect', { address, guid })
+            }
+            if (id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_BANNED || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
+              this.emit('disconnect', { address, guid, reason: id })
+            }
+          } else { // User messages
+            this.emit('encapsulated', { buffer: buf, address, guid })
           }
-          if (id == MessageID.ID_CONNECTION_REQUEST_ACCEPTED) {
-            this.emit('connected', { address, guid })
-          }
-          if (id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_BANNED || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
-            this.emit('disconnected', { address, guid, reason: id })
-          }
-        } else { // User messages
-          this.emit('encapsulated', { buffer: buf, address, guid })
-        }
-      } catch (e) {
-        console.warn('While decoding', buf.toString('hex'))
-        console.error('Client failed to read packet:', e)
+        } catch (e) {
+          console.warn('While decoding', buf.toString('hex'))
+          console.error('Client failed to read packet:', e)
+        } 
       }
     })
   }
@@ -87,30 +89,32 @@ class Server extends EventEmitter {
   }
 
   listen () {
-    return this.server.listen((buffer, address, guid) => {
-      const buf = Buffer.from(buffer)
-      // console.log('S -> ', buffer, address, guid)
-      try {
-        const id = buf[0]
-        if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
-          if (id == MessageID.ID_NEW_INCOMING_CONNECTION) {
-            const client = new ServerClient(this, address, guid)
-            this.connections.set(guid, client)
-            this.emit('openConnection', client)
-          } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
-            if (this.connections.has(guid)) {
-              const con = this.connections.get(guid)
-              this.emit('closeConnection', con, id)
-              con.neuter()
+    return this.server.listen(packets => {
+      for (const [buffer, address, guid] of packets) {
+        const buf = Buffer.from(buffer)
+        // console.log('S -> ', buffer, address, guid)
+        try {
+          const id = buf[0]
+          if (id < MessageID.ID_USER_PACKET_ENUM) { // Internal RakNet messages: we handle & emit
+            if (id == MessageID.ID_NEW_INCOMING_CONNECTION) {
+              const client = new ServerClient(this, address, guid)
+              this.connections.set(guid, client)
+              this.emit('openConnection', client)
+            } else if (id == MessageID.ID_DISCONNECTION_NOTIFICATION || id == MessageID.ID_CONNECTION_LOST || id == MessageID.ID_INCOMPATIBLE_PROTOCOL_VERSION) {
+              if (this.connections.has(guid)) {
+                const con = this.connections.get(guid)
+                this.emit('closeConnection', con, id)
+                con.neuter()
+              }
+              this.connections.delete(guid)
             }
-            this.connections.delete(guid)
+          } else { // User messages
+            this.emit('encapsulated', { buffer: buf, address, guid })
           }
-        } else { // User messages
-          this.emit('encapsulated', { buffer: buf, address, guid })
+        } catch (e) { // If we don't handle this the program will segfault
+          console.warn('While decoding', buf.toString('hex'))
+          console.error('Server failed to read packet:', e)
         }
-      } catch (e) { // If we don't handle this the program will segfault
-        console.warn('While decoding', buf.toString('hex'))
-        console.error('Server failed to read packet:', e)
       }
     })
   }

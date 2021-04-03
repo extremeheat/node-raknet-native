@@ -59,30 +59,41 @@ void RakServer::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [&](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
+    auto callback = [&](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*> *datasPtr) {
+        auto datas = *datasPtr;
         //hexdump(data->data, data->length);
-        jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data),
-            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
-            Napi::String::From(env, data->guid.ToString())
-        });
-        //FreeJSPacket(data);
+        Napi::Array packets = Napi::Array::New(env, datas.size());
+        for (int i = 0; i < datas.size(); i++) {
+            auto data = datas[i];
+            Napi::Array fields = Napi::Array::New(env, 3);
+            int j = 0;
+            fields[j++] = Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data);
+            fields[j++] = Napi::String::From(env, data->systemAddress.ToString(true, '/'));
+            fields[j++] = Napi::String::From(env, data->guid.ToString());
+            packets[i] = fields;
+        }
+        jsCallback.Call({ packets });
+        delete datasPtr;
     };
 
     // Holds packets
     RakNet::Packet* p = 0;
     RakNet::SystemAddress clientID;
     while (ctx->running && client->IsActive()) {
-        RakSleep(30);
+        RakSleep(50);
+        auto jsps = new std::vector<JSPacket*>();
         while (p = client->Receive()) {
-            //auto packetIdentifier = GetPacketIdentifier2(p);
-            //printf("server Got packet ID: %d\n", packetIdentifier);
             auto jsp = CreateJSPacket(p);
+            jsps->push_back(jsp);
             client->DeallocatePacket(p);
-            auto status = ctx->tsfn.NonBlockingCall(jsp, callback);
+        }
+        if (jsps->size()) {
+            auto status = ctx->tsfn.NonBlockingCall(jsps, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakServer failed to emit packet to JS: %d\n", status);
             }
+        } else {
+            delete jsps;
         }
     }
     printf("server RELEASING\n");

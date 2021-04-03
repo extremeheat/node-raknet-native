@@ -41,23 +41,25 @@ async function connectTest () {
 
     server.listen()
     let lastC = 0
-    client.on('encapsulated', (encap) => {
-      console.assert(encap.buffer[0] == 0xf0)
-      const ix = encap.buffer[1]
-      if (lastC++ !== ix) {
-        throw Error(`Packet mismatch: ${lastC - 1} != ${ix}`)
-      }
-      client.send(encap.buffer, PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
+    client.on('connect', () => {
+      console.log('connected!')
+      client.on('encapsulated', (encap) => {
+        console.assert(encap.buffer[0] == 0xf0)
+        const ix = encap.buffer[1]
+        if (lastC++ !== ix) {
+          throw Error(`Packet mismatch: ${lastC - 1} != ${ix}`)
+        }
+        client.send(encap.buffer, PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
+      })
     })
     let lastS = 0
     server.on('encapsulated', (encap) => {
-      // console.log('Server encap', encap)
       console.assert(encap.buffer[0] == 0xf0)
       const ix = encap.buffer[1]
       if (lastS++ !== ix) {
         throw Error(`Packet mismatch: ${lastS - 1} != ${ix}`)
       }
-      if (lastS == lastC) {
+      if (lastS == 50) {
         client.close()
         server.close()
         res(true)
@@ -92,7 +94,7 @@ async function kickTest() {
       client.close()
     })
     server.listen()
-    client.on('disconnected', packet => {
+    client.on('disconnect', packet => {
       console.log('clien got disconnect', packet)
       try {
         const ret = client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)

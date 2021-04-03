@@ -4,6 +4,7 @@
 #include <napi.h>
 #include <thread>
 #include <chrono>
+#include <vector>
 #include "RakClient.h"
 
 #include "RakPeerInterface.h"
@@ -86,13 +87,20 @@ void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [this](Napi::Env env, Napi::Function jsCallback, JSPacket* data) {
+    auto callback = [this](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*> *datasPtr) {
+        auto datas = *datasPtr;
         //hexdump(data->data, data->length);
-        jsCallback.Call({
-            Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data),
-            Napi::String::From(env, data->systemAddress.ToString(true, '/')),
-            Napi::String::From(env, data->guid.ToString())
+        Napi::Array packets = Napi::Array::New(env, datas.size());
+        for (int i = 0; i < datas.size(); i++) {
+            auto data = datas[i];
+            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data);
+        }
+        jsCallback.Call({ 
+            packets, 
+            Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
+            Napi::String::From(env, datas[0]->guid.ToString())
         });
+        delete datasPtr;
     };
 
     // Holds packets
@@ -100,16 +108,20 @@ void RakClient::RunLoop() {
     RakNet::SystemAddress clientID;
     while (context->running && client->IsActive()) {
         RakSleep(30);
+        auto jsps = new std::vector<JSPacket*>();
         while (p = client->Receive()) {
-            //auto packetIdentifier = GetPacketIdentifier2(p);
-            //printf("Got packet ID: %d\n", packetIdentifier);
             auto jsp = CreateJSPacket(p);
+            jsps->push_back(jsp);
             client->DeallocatePacket(p);
             //hexdump(p->data, p->length);
-            auto status = context->tsfn.NonBlockingCall(jsp, callback);
+        }
+        if (jsps->size()) {
+            auto status = context->tsfn.NonBlockingCall(jsps, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
             }
+        } else {
+            delete jsps;
         }
     }
     // Release the thread-safe function. This decrements the internal thread
@@ -175,7 +187,7 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
     bool broadcast = info[4].As<Napi::Boolean>().ToBoolean();
 
     auto state = client->GetConnectionState(this->conAddr);
-    printf("Send con state: %d %d\n", state, buffer.ByteLength());
+    printf("Send con state: %d %d %s\n", state, buffer.ByteLength(), this->conAddr.ToString());
 
     if (state != RakNet::IS_CONNECTED) {
         return Napi::Number::New(env, -(int)state);
