@@ -8,7 +8,7 @@ import { MessageID, PacketPriority, PacketReliability, ServerOptions } from './t
 export declare class RakClient {
     constructor(hostname: string, port: number, game?: string)
     ping(): void
-    connect(packetCallback: (buffer: ArrayBuffer, address: string, guid: string) => void): void;
+    connect(packetCallback: (packets: [buffer: ArrayBuffer, address: string, guid: string][]) => void): void;
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
     close(): void
 }
@@ -40,11 +40,11 @@ export declare class Client extends EventEmitter {
     /**
      * The client has connected
      */
-    on(event: 'connected', params: (data: { address: string, guid: string }) => void)
+    on(event: 'connect', params: (data: { address: string, guid: string }) => void)
     /**
      * The client has been disconnected
      */
-    on(event: 'disconnected', params: (data: { address: string, guid: string, reason: MessageID }) => void)
+    on(event: 'disconnect', params: (data: { address: string, guid: string, reason: MessageID }) => void)
     /**
      * Recieve an actual user packet.
      */
