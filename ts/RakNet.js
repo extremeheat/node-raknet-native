@@ -3,9 +3,9 @@ const { EventEmitter } = require('events')
 const { MessageID } = require('./Constants')
 
 class Client extends EventEmitter {
-  constructor (hostname, port, game = 'minecraft') {
+  constructor (hostname, port, options = {}) {
     super()
-    this.client = new RakClient(hostname, port, game)
+    this.client = new RakClient(hostname, port, options)
     this.ping = () => this.client.ping()
     this.connect = () => this.client.connect()
     this.close = () => this.client.close()
@@ -76,15 +76,11 @@ class Server extends EventEmitter {
     this.server = new RakServer(hostname, port, options)
     this.close = () => this.server.close()
     this.connections = new Map()
-    this.setOfflineMessage(options.message)
+    if (options.message) this.setOfflineMessage(options.message)
   }
 
   setOfflineMessage (message) {
-    if (!message) return
-    if (message instanceof Buffer) {
-      if (message.buffer.byteLength != message.byteLength) message = new Uint8Array(message)
-      else message = message.buffer
-    }
+    if (!message instanceof Buffer) Buffer.from(message)
     this.server.setPongResponse(message)
   }
 

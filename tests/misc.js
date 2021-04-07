@@ -1,9 +1,7 @@
 async function work() {
   var server = new Server('0.0.0.0', 19132, {
     maxConnections: 3,
-    minecraft: {
-      message: new ServerName().toString()
-    }
+    message: Buffer.from('FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;')
   })
   server.listen().then((ok) => {
     console.log('closed!!!')

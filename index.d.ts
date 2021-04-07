@@ -1,12 +1,11 @@
 import { EventEmitter } from 'events'
-import { MessageID, PacketPriority, PacketReliability, ServerOptions } from './ts/Constants';
-
+import { MessageID, PacketPriority, PacketReliability, ClientOptions, ServerOptions } from './ts/Constants';
 
 /**
  * Internal RakNet binding in native code. Avoid using it, use Client or Server wrappers instead.
  */
 export declare class RakClient {
-    constructor(hostname: string, port: number, game?: string)
+    constructor(hostname: string, port: number, options: ClientOptions)
     ping(): void
     connect(packetCallback: (packets: [buffer: ArrayBuffer, address: string, guid: string][]) => void): void;
     send(message: Buffer, priority: PacketPriority, reliability: PacketReliability, orderingChannel: number, broadcast?: boolean): number
@@ -24,7 +23,7 @@ export declare class RakServer {
 }
 
 export declare class Client extends EventEmitter {
-    constructor(hostname: string, port: number, game?: string)
+    constructor(hostname: string, port: number, options?: ClientOptions)
     /**
      * Send a RakNet PING request to the server
      */
@@ -110,19 +109,6 @@ export declare class Server {
      * Closes the connection. This is a *blocking* call.
      */
     close(): void
-}
-
-export declare class McPingMessage {
-    motd: string
-    name: string
-    protocol: number
-    version: string
-    players: {
-        online: number,
-        max: number
-    }
-    gamemode: string
-    serverId: string
 }
 
 export { PacketPriority }
