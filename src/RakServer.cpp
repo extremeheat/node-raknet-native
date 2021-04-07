@@ -47,8 +47,9 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     auto options = info[2].As<Napi::Object>();
 
     if (options.Has("maxConnections")) this->options.maxConnections = options.Get("maxConnections").As<Napi::Number>();
-    if (options.Has("minecraft")) {
-        SetRakNetProtocolVersion(10);
+    if (options.Has("protocolVersion")) {
+        auto protocolVersion = options.Get("protocolVersion").As<Napi::Number>().Int32Value();
+        SetRakNetProtocolVersion(protocolVersion);
     }
     
     server = RakNet::RakPeerInterface::GetInstance();
@@ -206,7 +207,7 @@ void RakServer::SetPongResponse(const Napi::CallbackInfo& info) {
         return;
     }
 
-    auto buffer = info[0].As<Napi::ArrayBuffer>();
+    auto buffer = info[0].As<Napi::Buffer<char>>();
     //hexdump((void*)buffer.Data(), buffer.ByteLength());
     server->SetOfflinePingResponse((const char*)buffer.Data(), buffer.ByteLength());
 }

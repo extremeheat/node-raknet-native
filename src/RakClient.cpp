@@ -46,11 +46,10 @@ RakClient::RakClient(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakClien
 
     this->hostname = info[0].As<Napi::String>().Utf8Value();
     this->port = info[1].As<Napi::Number>().Int32Value();
-    if (info.Length() == 3) {
-        auto connectionType = info[2].As<Napi::String>().Utf8Value();
-        if (connectionType == "minecraft") {
-            SetRakNetProtocolVersion(10);
-        }
+    auto options = info[2].As<Napi::Object>();
+    if (options.Has("protocolVersion")) {
+        auto protocolVersion = options.Get("protocolVersion").As<Napi::Number>().Int32Value();
+        SetRakNetProtocolVersion(protocolVersion);
     }
 
     // Validate the hostname + port and save

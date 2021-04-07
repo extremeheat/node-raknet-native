@@ -12,7 +12,7 @@ Prebuilds are provided for 64-bit Windows 10, Linux and macOS Catalina. If a pre
 See [#Usage](#Usage) below.
 
 ## Build
-You must clone the repository recursively. 
+If cloning from git, you must clone the repository recursively. 
 
 ```sh
 git clone --recursive https://github.com/extremeheat/node-raknet-native.git && cd node-raknet-native
@@ -53,11 +53,11 @@ server.on('openConnection', (client) => {
 })
 ```
 
-For Minecraft Bedrock, use:
+For example, for Minecraft Bedrock, use:
 ```ts
 const { Client, Server, PacketPriority, MCPingMessage } = require('raknet-native')
-const client = new Client('127.0.0.1', 19130, 'minecraft')
-const server = new Server('0.0.0.0', 19130, { maxConnections: 3, minecraft: { message: new MCPingMessage().toString() }  })
+const client = new Client('127.0.0.1', 19130, { protocolVersion: 10 })
+const server = new Server('0.0.0.0', 19130, { protocolVersion: 10, maxConnections: 3, message: new MCPingMessage().toString()  })
 ```
 
 For more usage examples see tests/.
@@ -67,7 +67,7 @@ See index.d.ts for full API docs.
 
 ```ts
 export declare class Client extends EventEmitter {
-    constructor(hostname: string, port: number, game?: string)
+    constructor(hostname: string, port: number, options?: ClientOptions)
     /**
      * Send a RakNet PING request to the server
      */
@@ -83,11 +83,11 @@ export declare class Client extends EventEmitter {
     /**
      * The client has connected
      */
-    on(event: 'connected', params: (data: { address: string, guid: string }) => void)
+    on(event: 'connect', params: (data: { address: string, guid: string }) => void)
     /**
      * The client has been disconnected
      */
-    on(event: 'disconnected', params: (data: { address: string, guid: string, reason: MessageID }) => void)
+    on(event: 'disconnect', params: (data: { address: string, guid: string, reason: MessageID }) => void)
     /**
      * Recieve an actual user packet.
      */

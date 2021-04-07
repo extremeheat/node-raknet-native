@@ -1,14 +1,13 @@
 const { Server, Client } = require('../ts/RakNet')
 const { MessageID, PacketPriority, PacketReliability } = require('../ts/Constants')
-const ServerName = require('../ts/mcPingMessage')
 
 async function pingTest () {
   return new Promise((res, rej) => {
-    const message = new ServerName().toBuffer()
+    const message = 'FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;'
     const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
       minecraft: {},
-      message
+      message: Buffer.from(message)
     })
     const client = new Client('127.0.0.1', 19130, 'minecraft')
 
@@ -31,11 +30,11 @@ async function pingTest () {
 
 async function connectTest () {
   return new Promise((res, rej) => {
-    const message = new ServerName().toBuffer()
+    const message = 'FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;'
     const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
       minecraft: {},
-      message
+      message: Buffer.from(message)
     })
     const client = new Client('127.0.0.1', 19130, 'minecraft')
 
