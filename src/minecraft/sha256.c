@@ -12,6 +12,9 @@
 			  This implementation uses little endian byte order.
 *********************************************************************/
 
+// 32-bit word, change to "long" for 16-bit machines
+#define WORD unsigned int
+
 /*************************** HEADER FILES ***************************/
 #include <stdlib.h>
 #include <memory.h>
