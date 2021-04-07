@@ -81,7 +81,7 @@ async function connectTest () {
   })
 }
 
-async function kickTest() {
+async function kickTest () {
   return new Promise((res, rej) => {
     const server = new Server('0.0.0.0', 19131, {
       maxConnections: 3
@@ -105,7 +105,7 @@ async function kickTest() {
         res()
       }
     })
-    
+
     client.connect()
   })
 }

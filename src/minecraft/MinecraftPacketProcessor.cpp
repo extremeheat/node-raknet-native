@@ -33,13 +33,18 @@ void MinecraftHelper::CreateCipher(const Napi::CallbackInfo& info) {
         Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
         return;
     }
-    auto secret = info[0].As<Napi::ArrayBuffer>();
-    auto iv = info[1].As<Napi::ArrayBuffer>();
+    auto alg = info[0].As<Napi::String>().Utf8Value();
+    auto secret = info[1].As<Napi::ArrayBuffer>();
+    auto iv = info[2].As<Napi::ArrayBuffer>();
+    if (alg != "CFB8") {
+        Napi::TypeError::New(env, "Unsupported cipher alg").ThrowAsJavaScriptException();
+        return;
+    }
     helper.createCiphers((u8*)secret.Data(), secret.ByteLength(), (BYTE*)iv.Data());
 }
 
 Napi::Value MinecraftHelper::Cipher(const Napi::CallbackInfo& info) {
-    auto data = info[0].As<Napi::ArrayBuffer>();
+    auto data = info[0].As<Napi::Buffer<char>>();
     auto enc = helper.cipher((u8*)data.Data(), data.ByteLength());
     auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), enc, data.ByteLength(), cleanup);
     return jsbuffer;

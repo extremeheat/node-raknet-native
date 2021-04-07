@@ -43,7 +43,7 @@ class Client extends EventEmitter {
         } catch (e) {
           console.warn('While decoding', buf.toString('hex'))
           console.error('Client failed to read packet:', e)
-        } 
+        }
       }
     })
   }

@@ -10,5 +10,5 @@ module.exports = {
   PacketPriority,
   PacketReliability,
   McPingMessage: require('./ts/mcPingMessage'),
-  CipherCFB8: require('./ts/mcHelper')
+  ...require('./ts/mcHelper')
 }
