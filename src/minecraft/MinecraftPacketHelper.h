@@ -9,8 +9,10 @@ extern "C" {
 #include "sha256.h"
 }
 
+#include "../Util.h"
+
 typedef const unsigned char u8;
-typedef unsigned char u64;
+typedef unsigned long long u64;
 typedef std::string String;
 
 // Similar to the zlib compress() and decompress() helpers, but with customizable window type (for mcpe, we need to disable zlib magic)
