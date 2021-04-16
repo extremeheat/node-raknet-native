@@ -25,7 +25,7 @@ class Client extends EventEmitter {
             if (id == MessageID.ID_UNCONNECTED_PONG) {
               if (buf.byteLength > 5) {
                 const extra = Buffer.from(buf.slice(5))
-                console.log('Extra', extra.toString())
+                // console.log('Extra', extra.toString())
                 this.emit('pong', { extra })
               } else {
                 this.emit('pong', {})
