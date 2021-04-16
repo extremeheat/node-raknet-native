@@ -55,9 +55,9 @@ server.on('openConnection', (client) => {
 
 For example, for Minecraft Bedrock, use:
 ```ts
-const { Client, Server, PacketPriority, MCPingMessage } = require('raknet-native')
+const { Client, Server, PacketPriority } = require('raknet-native')
 const client = new Client('127.0.0.1', 19130, { protocolVersion: 10 })
-const server = new Server('0.0.0.0', 19130, { protocolVersion: 10, maxConnections: 3, message: new MCPingMessage().toString()  })
+const server = new Server('0.0.0.0', 19130, { protocolVersion: 10, maxConnections: 3, message: Buffer.from('MCPE;Steve;2 7;0.11.0;0;20')  })
 ```
 
 For more usage examples see tests/.

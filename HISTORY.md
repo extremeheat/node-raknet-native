@@ -1,3 +1,7 @@
+## 1.0.1
+
+* Add a utility AES GCM cipher
+
 ## 1.0.0
 
 * BREAKING: Client event name changes : 

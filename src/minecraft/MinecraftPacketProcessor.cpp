@@ -36,23 +36,40 @@ void MinecraftHelper::CreateCipher(const Napi::CallbackInfo& info) {
     auto alg = info[0].As<Napi::String>().Utf8Value();
     auto secret = info[1].As<Napi::ArrayBuffer>();
     auto iv = info[2].As<Napi::ArrayBuffer>();
-    if (alg != "CFB8") {
+    if (alg == "CFB8") {
+        helper.createCiphers((u8*)secret.Data(), secret.ByteLength(), (BYTE*)iv.Data());
+        mode = 1;
+    } else if (alg == "GCM") {
+        gcm.createCiphers((unsigned char*)secret.Data(), secret.ByteLength(), (BYTE*)iv.Data());
+        mode = 2;
+    } else {
         Napi::TypeError::New(env, "Unsupported cipher alg").ThrowAsJavaScriptException();
         return;
     }
-    helper.createCiphers((u8*)secret.Data(), secret.ByteLength(), (BYTE*)iv.Data());
 }
 
 Napi::Value MinecraftHelper::Cipher(const Napi::CallbackInfo& info) {
     auto data = info[0].As<Napi::Buffer<char>>();
-    auto enc = helper.cipher((u8*)data.Data(), data.ByteLength());
-    auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), enc, data.ByteLength(), cleanup);
-    return jsbuffer;
+    if (mode == 1) {
+        auto enc = helper.cipher((u8*)data.Data(), data.ByteLength());
+        auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), enc, data.ByteLength(), cleanup);
+        return jsbuffer;
+    } else {
+        auto enc = gcm.cipher((unsigned char*)data.Data(), data.ByteLength());
+        auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), enc, data.ByteLength(), cleanup);
+        return jsbuffer;
+    }
 }
 
 Napi::Value MinecraftHelper::Decipher(const Napi::CallbackInfo& info) {
     auto data = info[0].As<Napi::Buffer<char>>();
-    auto dec = helper.decipher((u8*)data.Data(), data.ByteLength());
-    auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), dec, data.ByteLength(), cleanup);
-    return jsbuffer;
+    if (mode == 1) {
+        auto dec = helper.decipher((u8*)data.Data(), data.ByteLength());
+        auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), dec, data.ByteLength(), cleanup);
+        return jsbuffer;
+    } else {
+        auto dec = gcm.decipher((unsigned char*)data.Data(), data.ByteLength());
+        auto jsbuffer = Napi::ArrayBuffer::New(info.Env(), dec, data.ByteLength(), cleanup);
+        return jsbuffer;
+    }
 }

@@ -1,11 +1,14 @@
 #pragma once
 
 #include <napi.h>
+#include "GCMHelper.h"
 #include "MinecraftPacketHelper.h"
 
 class MinecraftHelper : public Napi::ObjectWrap<MinecraftHelper> {
 private:
+    GCMHelper gcm;
     MinecraftPacketHelper helper;
+    int mode = 0;
 public:
     MinecraftHelper(const Napi::CallbackInfo& info) : Napi::ObjectWrap<MinecraftHelper>(info) { }
 
