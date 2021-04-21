@@ -11,6 +11,7 @@ set(RAKNET_ENABLE_SAMPLES FALSE)
 add_subdirectory( raknet )
 
 set (CMAKE_CXX_STANDARD 14)
+add_compile_definitions(MAXIMUM_NUMBER_OF_INTERNAL_IDS=20)
 include_directories("raknet/Source")
 
 include_directories(${CMAKE_JS_INC})
@@ -38,6 +39,6 @@ endforeach()
 
 
 # define NPI_VERSION
-add_definitions(-DNAPI_VERSION=6)
+add_compile_definitions(DNAPI_VERSION=6)
 
 target_link_libraries( node-raknet RakNetLibStatic )

@@ -41,8 +41,9 @@ class Client extends EventEmitter {
             this.emit('encapsulated', { buffer: buf, address, guid })
           }
         } catch (e) {
-          console.warn('While decoding', buf.toString('hex'))
-          console.error('Client failed to read packet:', e)
+          console.debug('While decoding', buf.toString('hex'))
+          console.debug('Client failed to read packet', e)
+          this.emit('error', e, buf)
         }
       }
     })
@@ -108,8 +109,9 @@ class Server extends EventEmitter {
             this.emit('encapsulated', { buffer: buf, address, guid })
           }
         } catch (e) { // If we don't handle this the program will segfault
-          console.warn('While decoding', buf.toString('hex'))
-          console.error('Server failed to read packet:', e)
+          console.debug('While decoding', buf.toString('hex'))
+          console.debug('Server failed to read packet', e)
+          this.emit('error', e, buf)
         }
       }
     })
