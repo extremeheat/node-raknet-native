@@ -1,4 +1,10 @@
 # node-raknet-native
+[![NPM version](https://img.shields.io/npm/v/raknet-native.svg)](http://npmjs.com/package/raknet-native)
+[![Build Status](https://github.com/extremeheat/node-raknet-native/workflows/Node%20Native%20Build%20CI/badge.svg)](https://github.com/extremeheat/node-raknet-native/actions)
+[![Discord](https://img.shields.io/badge/chat-on%20discord-brightgreen.svg)](https://discord.gg/GsEFRM8)
+[![Try it on gitpod](https://img.shields.io/badge/try-on%20gitpod-brightgreen.svg)](https://gitpod.io/#https://github.com/extremeheat/node-raknet-native)
+
+
 Native RakNet bindings for Node.js
 
 ## Install
