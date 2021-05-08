@@ -111,8 +111,8 @@ void RakClient::RunLoop() {
         while (p = client->Receive()) {
             auto jsp = CreateJSPacket(p);
             jsps->push_back(jsp);
+            // hexdump(p->data, p->length);
             client->DeallocatePacket(p);
-            //hexdump(p->data, p->length);
         }
         if (jsps->size()) {
             auto status = context->tsfn.NonBlockingCall(jsps, callback);

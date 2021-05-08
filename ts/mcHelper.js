@@ -25,7 +25,7 @@ class CipherGCM {
     if (secret instanceof Buffer && secret.buffer.byteLength != secret.byteLength) secret = new Uint8Array(secret)
     if (iv instanceof Buffer && iv.buffer.byteLength != iv.byteLength) iv = new Uint8Array(iv)
     this.ctx = new MinecraftHelper()
-    this.ctx.createCipher('GCM', secret.buffer ?? secret, iv.buffer ?? iv.buffer)
+    this.ctx.createCipher('GCM', secret.buffer ?? secret, iv.buffer ?? iv)
   }
 
   cipher (message) {
