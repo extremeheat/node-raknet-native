@@ -1,6 +1,6 @@
 # node-raknet-native
 [![NPM version](https://img.shields.io/npm/v/raknet-native.svg)](http://npmjs.com/package/raknet-native)
-[![Build Status](https://github.com/extremeheat/node-raknet-native/workflows/Node%20Native%20Build%20CI/badge.svg)](https://github.com/extremeheat/node-raknet-native/actions)
+[![Build Status](https://github.com/extremeheat/node-raknet-native/workflows/CI/badge.svg)](https://github.com/extremeheat/node-raknet-native/actions)
 [![Discord](https://img.shields.io/badge/chat-on%20discord-brightgreen.svg)](https://discord.gg/GsEFRM8)
 [![Try it on gitpod](https://img.shields.io/badge/try-on%20gitpod-brightgreen.svg)](https://gitpod.io/#https://github.com/extremeheat/node-raknet-native)
 
@@ -14,23 +14,6 @@ npm install raknet-native
 ```
 
 Prebuilds are provided for 64-bit Windows 10, Linux and macOS Catalina. If a prebuild does not work, create an issue and set enviornment variable FORCE_BUILD to force a manual build.
-
-See [#Usage](#Usage) below.
-
-## Build
-If cloning from git, you must clone the repository recursively. 
-
-```sh
-git clone --recursive https://github.com/extremeheat/node-raknet-native.git && cd node-raknet-native
-npm install
-```
-### Build on mac
-
-You need to install xcode utilities first:
-
-```
-xcode-select --install
-```
 
 ## Usage
 
@@ -68,8 +51,28 @@ const server = new Server('0.0.0.0', 19130, { protocolVersion: 10, maxConnection
 
 For more usage examples see tests/.
 
-### Exported API
-See index.d.ts for full API docs.
+## Cloning
+If cloning from git, you must clone the repository recursively. 
+
+```sh
+git clone --recursive https://github.com/extremeheat/node-raknet-native.git
+```
+
+## Dependencies
+
+For the most part, pre-builds are provided so you don't need to worry about having the correct build tools installed. But if a pre-build doesn't work, you may need to install the following deps:
+
+#### Mac OS
+
+You need to install xcode utilities first (this is *not* the whole Xcode!):
+
+```
+xcode-select --install
+```
+
+
+## Exported API
+See index.d.ts for full API docs, a copy of the definitions are listed below:
 
 ```ts
 export declare class Client extends EventEmitter {
