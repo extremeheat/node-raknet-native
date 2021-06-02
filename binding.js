@@ -14,7 +14,7 @@ if (!process.versions.electron) {
 }
 
 let bindings
-const pathsToSearch = [helper.getPath(), helper.getFallbackPath()]
+const pathsToSearch = [helper.getPath()]
 for (const importPath of pathsToSearch) {
   try {
     bindings = require(importPath)
