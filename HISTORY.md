@@ -1,3 +1,6 @@
+## 1.0.2
+* Be more conservative with prebuild usage [#3](https://github.com/extremeheat/node-raknet-native/pull/3)
+
 ## 1.0.1
 
 * Add a utility AES GCM cipher
