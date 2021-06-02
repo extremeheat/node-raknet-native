@@ -1,13 +1,11 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Node Native Build CI
+name: CI
 
 on:
   push:
     branches: [ master ]
-    tags:
-      - v*
   pull_request:
     branches: [ master ]
   # Run on new tags
@@ -50,7 +48,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags')
+    if: startsWith(github.ref, 'refs/heads/master')
     steps:
       - uses: actions/checkout@v2
         with:
@@ -68,8 +66,21 @@ jobs:
       - run: npm install
         env: 
           SKIP_BUILD: true
-      - run: npm publish
+      - id: publish
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.npm_token }}
+      - name: Create Release
+        if: steps.publish.outputs.type != 'none'
+        id: create_release
+        uses: actions/create-release@v1
         env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.publish.outputs.version }}
+          release_name: Release ${{ steps.publish.outputs.version }}
+          body: ${{ steps.publish.outputs.version }}
+          draft: false
+          prerelease: false 
       - name: Display structure of downloaded files
         run: ls -R
