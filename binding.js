@@ -1,5 +1,5 @@
 const helper = require('./helpers/buildPath.js')
-const path = require('path')
+const fs = require('fs')
 const debug = require('debug')('raknet')
 
 if (!process.versions.electron) {
@@ -24,7 +24,8 @@ for (const importPath of pathsToSearch) {
   }
 }
 
-if (!bindings) {
+// We want to use the built release if available
+if (!bindings || fs.existsSync('./build/Release')) {
   bindings = require('bindings')('node-raknet.node')
 }
 
