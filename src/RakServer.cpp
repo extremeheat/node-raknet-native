@@ -127,12 +127,12 @@ Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
     socketDescriptors[1].port = this->port;
     socketDescriptors[1].socketFamily = AF_INET6;
     //TODO: fix ipv6
-    bool b = server->Startup(4, socketDescriptors, 2) == RakNet::RAKNET_STARTED;
+    bool b = server->Startup(this->options.maxConnections, socketDescriptors, 2) == RakNet::RAKNET_STARTED;
     if (!b) {
         printf("Failed to start dual IPV4 and IPV6 ports. Trying IPV4 only.\n");
 
         // Try again, but leave out IPV6
-        b = server->Startup(4, socketDescriptors, 1) == RakNet::RAKNET_STARTED;
+        b = server->Startup(this->options.maxConnections, socketDescriptors, 1) == RakNet::RAKNET_STARTED;
         if (!b) {
             Napi::TypeError::New(env, "Server failed to start").ThrowAsJavaScriptException();
             return Napi::Boolean::New(env, false);
