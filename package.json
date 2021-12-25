@@ -1,6 +1,6 @@
 {
   "name": "raknet-native",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Native bindings for RakNet",
   "main": "index.js",
   "scripts": {

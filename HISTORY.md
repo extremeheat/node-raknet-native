@@ -1,3 +1,15 @@
+## 1.0.8
+* fix set maximum incoming connections bug. (#6) (@b23r0)
+
+## 1.0.7
+* Remove `segfault-handler` dependency
+
+## 1.0.6
+* Fix issue with finding prebuilds
+
+## 1.0.4
+* only build static raknet library
+
 ## 1.0.2
 * Be more conservative with prebuild usage [#3](https://github.com/extremeheat/node-raknet-native/pull/3)
 
