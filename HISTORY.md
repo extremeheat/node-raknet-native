@@ -1,3 +1,6 @@
+## 1.0.9
+* Fix macOS Catalina prebuild
+
 ## 1.0.8
 * fix set maximum incoming connections bug. (#6) (@b23r0)
 
