@@ -11,6 +11,7 @@
     "pretest": "npm run cmake",
     "prepublish": "cd helpers && node npmPublish.js",
     "release": "cd helpers && node npmRelease.js",
+    "format": "clang-format -i src/*.cpp && clang-format -i src/*.h",
     "test": "mocha --bail --exit"
   },
   "repository": {

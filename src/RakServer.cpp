@@ -18,12 +18,11 @@
 #define printf
 
 Napi::Object RakServer::Initialize(Napi::Env& env, Napi::Object& exports) {
-    Napi::Function func = DefineClass(
-        env, "RakServer",
-        {InstanceMethod("listen", &RakServer::Listen),
-         InstanceMethod("send", &RakServer::SendEncapsulated),
-         InstanceMethod("kick", &RakServer::Kick), InstanceMethod("close", &RakServer::Close),
-         InstanceMethod("setPongResponse", &RakServer::SetPongResponse)});
+    Napi::Function func =
+        DefineClass(env, "RakServer",
+                    {InstanceMethod("listen", &RakServer::Listen), InstanceMethod("send", &RakServer::SendEncapsulated),
+                     InstanceMethod("kick", &RakServer::Kick), InstanceMethod("close", &RakServer::Close),
+                     InstanceMethod("setPongResponse", &RakServer::SetPongResponse)});
 
     Napi::FunctionReference* constructor = new Napi::FunctionReference();
     *constructor = Napi::Persistent(func);
@@ -47,8 +46,7 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     this->port = info[1].As<Napi::Number>().Int32Value();
     auto options = info[2].As<Napi::Object>();
 
-    if (options.Has("maxConnections"))
-        this->options.maxConnections = options.Get("maxConnections").As<Napi::Number>();
+    if (options.Has("maxConnections")) this->options.maxConnections = options.Get("maxConnections").As<Napi::Number>();
     if (options.Has("protocolVersion")) {
         auto protocolVersion = options.Get("protocolVersion").As<Napi::Number>().Int32Value();
         SetRakNetProtocolVersion(protocolVersion);
@@ -62,8 +60,7 @@ void RakServer::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [&](Napi::Env env, Napi::Function jsCallback,
-                        std::vector<JSPacket*>* datasPtr) {
+    auto callback = [&](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*>* datasPtr) {
         auto datas = *datasPtr;
         Napi::Array packets = Napi::Array::New(env, datas.size());
         for (int i = 0; i < datas.size(); i++) {
@@ -122,23 +119,19 @@ Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
     for (unsigned int i = 0; i < sockets.Size(); i++) {
         printf("%i. %s\n", i + 1, sockets[i]->GetBoundAddress().ToString(true));
     }
-    printf("\nMy GUID is %s\n",
-           server->GetGuidFromSystemAddress(RakNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
+    printf("\nMy GUID is %s\n", server->GetGuidFromSystemAddress(RakNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
 
     RakNet::SocketDescriptor socketDescriptors[2];
-    socketDescriptors[0] =
-        RakNet::SocketDescriptor(this->port, this->hostname.size() ? this->hostname.c_str() : 0);
+    socketDescriptors[0] = RakNet::SocketDescriptor(this->port, this->hostname.size() ? this->hostname.c_str() : 0);
     socketDescriptors[1].port = this->port;
     socketDescriptors[1].socketFamily = AF_INET6;
     // TODO: fix ipv6
-    bool b = server->Startup(this->options.maxConnections, socketDescriptors, 2) ==
-             RakNet::RAKNET_STARTED;
+    bool b = server->Startup(this->options.maxConnections, socketDescriptors, 2) == RakNet::RAKNET_STARTED;
     if (!b) {
         printf("Failed to start dual IPV4 and IPV6 ports. Trying IPV4 only.\n");
 
         // Try again, but leave out IPV6
-        b = server->Startup(this->options.maxConnections, socketDescriptors, 1) ==
-            RakNet::RAKNET_STARTED;
+        b = server->Startup(this->options.maxConnections, socketDescriptors, 1) == RakNet::RAKNET_STARTED;
         if (!b) {
             Napi::TypeError::New(env, "Server failed to start").ThrowAsJavaScriptException();
             return Napi::Boolean::New(env, false);
@@ -186,8 +179,8 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
     RakNet::SystemAddress addr;
     if (!addr.FromStringExplicitPort(clientAddress.c_str(), clientPort, 4)) {
         if (!addr.FromStringExplicitPort(clientAddress.c_str(), clientPort, 6)) {
-            Napi::RangeError::New(env, "Invalid connection address " + this->hostname + "/" +
-                                           std::to_string(this->port))
+            Napi::RangeError::New(env,
+                                  "Invalid connection address " + this->hostname + "/" + std::to_string(this->port))
                 .ThrowAsJavaScriptException();
             return Napi::Number::New(env, 0);
         }
@@ -199,7 +192,6 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
         return Napi::Number::New(env, -(int)state);
     }
 
-
     auto ret = server->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority,
                             (PacketReliability)reliability, (char)orderChannel, addr, broadcast);
     return Napi::Number::New(env, ret);
@@ -208,8 +200,7 @@ Napi::Value RakServer::SendEncapsulated(const Napi::CallbackInfo& info) {
 void RakServer::SetPongResponse(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     if (info.Length() < 1 || !server) {
-        Napi::TypeError::New(env, "Wrong number of arguments or needs init")
-            .ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "Wrong number of arguments or needs init").ThrowAsJavaScriptException();
         return;
     }
 

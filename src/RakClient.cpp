@@ -20,12 +20,11 @@
 
 // JS Bindings
 Napi::Object RakClient::Initialize(Napi::Env& env, Napi::Object& exports) {
-    Napi::Function func = DefineClass(
-        env, "RakClient",
-        {InstanceMethod("listen", &RakClient::Listen),
-         InstanceMethod("connect", &RakClient::Connect),
-         InstanceMethod("send", &RakClient::SendEncapsulated),
-         InstanceMethod("ping", &RakClient::Ping), InstanceMethod("close", &RakClient::Close)});
+    Napi::Function func =
+        DefineClass(env, "RakClient",
+                    {InstanceMethod("listen", &RakClient::Listen), InstanceMethod("connect", &RakClient::Connect),
+                     InstanceMethod("send", &RakClient::SendEncapsulated), InstanceMethod("ping", &RakClient::Ping),  //
+                     InstanceMethod("close", &RakClient::Close)});
 
     Napi::FunctionReference* constructor = new Napi::FunctionReference();
     *constructor = Napi::Persistent(func);
@@ -56,8 +55,7 @@ RakClient::RakClient(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakClien
     // Validate the hostname + port and save
     if (!this->conAddr.FromStringExplicitPort(this->hostname.c_str(), this->port, 4)) {
         if (!this->conAddr.FromStringExplicitPort(this->hostname.c_str(), this->port, 6)) {
-            Napi::Error::New(env, "Invalid connection address " + this->hostname + "/" +
-                                      std::to_string(this->port))
+            Napi::Error::New(env, "Invalid connection address " + this->hostname + "/" + std::to_string(this->port))
                 .ThrowAsJavaScriptException();
             return;
         }
@@ -84,16 +82,14 @@ void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [this](Napi::Env env, Napi::Function jsCallback,
-                           std::vector<JSPacket*>* datasPtr) {
+    auto callback = [this](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*>* datasPtr) {
         auto datas = *datasPtr;
         Napi::Array packets = Napi::Array::New(env, datas.size());
         for (int i = 0; i < datas.size(); i++) {
             auto data = datas[i];
             packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length);
         }
-        jsCallback.Call({packets,
-                         Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
+        jsCallback.Call({packets, Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
                          Napi::String::From(env, datas[0]->guid.ToString())});
         delete datasPtr;
     };
@@ -120,7 +116,7 @@ void RakClient::RunLoop() {
     }
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
-    auto refCount = this->Ref(); // Force increment the ref count to avoid gc
+    auto refCount = this->Ref();  // Force increment the ref count to avoid gc
     context->tsfn.Release();
 }
 
@@ -136,14 +132,24 @@ Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
     context = new TsfnContext(env);
     context->rakPeer = client;
     // Create a new ThreadSafeFunction.
-    context->tsfn = Napi::ThreadSafeFunction::New(env,           // Environment
-                                                  eventHandler,  // JS function from caller
-                                                  "RakClient",   // Resource name
-                                                  0,             // Max queue size (0 = unlimited).
-                                                  1,             // Initial thread count
-                                                  context,       // Context,
-                                                  FinalizerCallback,  // Finalizer
-                                                  (void*)nullptr      // Finalizer data
+    context->tsfn = Napi::ThreadSafeFunction::New(
+        env,           // Environment
+        eventHandler,  // JS function from caller
+        "RakClient",   // Resource name
+        0,             // Max queue size (0 = unlimited).
+        1,             // Initial thread count
+        context,       // Context,
+        [](Napi::Env env, RakClient* thiz, TsfnContext* context) {
+            context->running = false;
+            // Close the RakNet client
+            thiz->Close();
+            // Join the thread
+            context->nativeThread.join();
+            // Resolve the Promise previously returned to JS via the CreateTSFN method.
+            context->deferred.Resolve(Napi::Boolean::New(env, true));
+            delete context;
+        },    // Finalizer
+        this  // Finalizer data
     );
     context->nativeThread = std::thread(&RakClient::RunLoop, this);
     this->context = context;
@@ -154,16 +160,13 @@ void RakClient::Connect(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     auto car = client->Connect(this->hostname.c_str(), this->port, "", 0);
     if (car != RakNet::CONNECTION_ATTEMPT_STARTED) {
-        Napi::Error::New(
-            env, "Unable to connect to " + std::to_string(this->port) + " - " + std::to_string(car))
+        Napi::Error::New(env, "Unable to connect to " + std::to_string(this->port) + " - " + std::to_string(car))
             .ThrowAsJavaScriptException();
         return;
     }
 }
 
-void RakClient::Ping(const Napi::CallbackInfo& info) {
-    client->Ping(this->hostname.c_str(), this->port, false);
-}
+void RakClient::Ping(const Napi::CallbackInfo& info) { client->Ping(this->hostname.c_str(), this->port, false); }
 
 Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
@@ -183,13 +186,14 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
     if (state != RakNet::IS_CONNECTED) {
         return Napi::Number::New(env, -(int)state);
     }
-    auto ret =
-        client->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority,
-                     (PacketReliability)reliability, (char)orderChannel, this->conAddr, broadcast);
+    auto ret = client->Send((char*)buffer.Data(), buffer.ByteLength(), (PacketPriority)priority,
+                            (PacketReliability)reliability, (char)orderChannel, this->conAddr, broadcast);
     return Napi::Number::New(env, ret);
 }
 
-void RakClient::Close(const Napi::CallbackInfo& info) {
+void RakClient::Close() {
     if (this->context) context->running = false;
     if (this->client) this->client->Shutdown(600);
 }
+
+void RakClient::Close(const Napi::CallbackInfo& info) { Close(); }

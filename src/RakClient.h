@@ -31,6 +31,7 @@ class RakClient : public Napi::ObjectWrap<RakClient> {
     // Send an Encapsulated raknet packet
     Napi::Value SendEncapsulated(const Napi::CallbackInfo& info);
     void Close(const Napi::CallbackInfo& info);
+    void Close();
     // Called by garbage collector, we don't have to worry about it
     ~RakClient() {
         if (client) {
