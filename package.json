@@ -38,6 +38,7 @@
     "minecraft-bedrock-server": "^1.1.2",
     "mocha": "^9.2.1",
     "raknet-native": "file:.",
+    "segfault-handler": "^1.3.0",
     "typescript": "^4.2.2"
   }
 }

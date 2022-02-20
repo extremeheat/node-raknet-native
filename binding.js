@@ -7,7 +7,7 @@ if (!process.versions.electron) {
   // uses NAN which is a hassle, so only load outside electron
   try {
     const SegfaultHandler = require('segfault-handler')
-    SegfaultHandler.registerHandler('crash.log')
+    // SegfaultHandler.registerHandler('crash.log')
   } catch (e) {
     debug('[raknet] segfault handler is not installed. If you run into crashing issues, install it with `npm i -D segfault-handler` to get debug info on native crashes')
   }
