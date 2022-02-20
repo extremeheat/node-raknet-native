@@ -90,7 +90,7 @@ void RakClient::RunLoop() {
         Napi::Array packets = Napi::Array::New(env, datas.size());
         for (int i = 0; i < datas.size(); i++) {
             auto data = datas[i];
-            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, 0, data);
+            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length);
         }
         jsCallback.Call({packets,
                          Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
