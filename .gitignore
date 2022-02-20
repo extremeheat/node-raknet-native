@@ -3,4 +3,5 @@ node_modules/
 *.log
 __*
 package-lock.json
+test/bds-*
 js/

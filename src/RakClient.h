@@ -1,11 +1,12 @@
 #pragma once
 
 #include <napi.h>
+
 #include "RakPeerInterface.h"
 #include "Util.h"
 
 class RakClient : public Napi::ObjectWrap<RakClient> {
-private:
+   private:
     RakNet::RakPeerInterface* client = nullptr;
     Napi::Function connectionCallback;
     Napi::Function packetCallback;
@@ -13,7 +14,8 @@ private:
     int port = 0;
     RakNet::SystemAddress conAddr;
     TsfnContext* context = nullptr;
-public:
+
+   public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);
     // Constructor
     RakClient(const Napi::CallbackInfo& info);

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { MessageID, PacketPriority, PacketReliability, ClientOptions, ServerOptions } from './ts/Constants';
+import { MessageID, PacketPriority, PacketReliability, ClientOptions, ServerOptions } from './lib/Constants';
 
 /**
  * Internal RakNet binding in native code. Avoid using it, use Client or Server wrappers instead.
