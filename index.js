@@ -8,6 +8,5 @@ module.exports = {
   Server,
   MessageID,
   PacketPriority,
-  PacketReliability,
-  ...require('./lib/mcHelper')
+  PacketReliability
 }
