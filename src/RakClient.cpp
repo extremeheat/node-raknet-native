@@ -16,8 +16,6 @@
 #include "RakSleep.h"
 #include "RuntimeVars.h"
 
-#define printf
-
 // JS Bindings
 Napi::Object RakClient::Initialize(Napi::Env& env, Napi::Object& exports) {
     Napi::Function func =
@@ -83,6 +81,7 @@ void RakClient::RunLoop() {
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
     auto callback = [this](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*>* datasPtr) {
+        printf("Reading %d packets\n", datasPtr->size());
         auto datas = *datasPtr;
         Napi::Array packets = Napi::Array::New(env, datas.size());
         for (int i = 0; i < datas.size(); i++) {
@@ -92,6 +91,7 @@ void RakClient::RunLoop() {
         jsCallback.Call({packets, Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
                          Napi::String::From(env, datas[0]->guid.ToString())});
         delete datasPtr;
+        printf("Freed %d packets\n", datasPtr->size());
     };
 
     // Holds packets
@@ -114,9 +114,11 @@ void RakClient::RunLoop() {
             delete jsps;
         }
     }
+
+    printf("Client loop release\n");
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
-    auto refCount = this->Ref();  // Force increment the ref count to avoid gc
+    //auto refCount = this->Ref();  // Force increment the ref count to avoid gc
     context->tsfn.Release();
 }
 
@@ -140,6 +142,7 @@ Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
         1,             // Initial thread count
         context,       // Context,
         [](Napi::Env env, RakClient* thiz, TsfnContext* context) {
+            printf("fin reg start\n");
             context->running = false;
             // Close the RakNet client
             thiz->Close();
@@ -148,11 +151,11 @@ Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
             // Resolve the Promise previously returned to JS via the CreateTSFN method.
             context->deferred.Resolve(Napi::Boolean::New(env, true));
             delete context;
+            printf("fin reg end\n");
         },    // Finalizer
         this  // Finalizer data
     );
     context->nativeThread = std::thread(&RakClient::RunLoop, this);
-    this->context = context;
     return context->deferred.Promise();
 }
 
@@ -194,6 +197,11 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
 void RakClient::Close() {
     if (this->context) context->running = false;
     if (this->client) this->client->Shutdown(600);
+    printf("Close JS\n");
 }
 
-void RakClient::Close(const Napi::CallbackInfo& info) { Close(); }
+void RakClient::Close(const Napi::CallbackInfo& info) { 
+    Close();
+    printf("Close C++\n");
+    //context->tsfn.Release();
+}
