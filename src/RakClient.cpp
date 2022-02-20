@@ -120,6 +120,7 @@ void RakClient::RunLoop() {
     }
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
+    auto refCount = this->Ref(); // Force increment the ref count to avoid gc
     context->tsfn.Release();
 }
 
