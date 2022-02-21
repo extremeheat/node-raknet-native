@@ -8,7 +8,7 @@ if (!process.versions.electron) {
   // Note: Need to be using debug release to make use of this! Run `npm run clean` then `npm test` to get a debug build
   try {
     const SegfaultHandler = require('segfault-handler')
-    // SegfaultHandler.registerHandler('crash.log')
+    SegfaultHandler.registerHandler('crash.log')
   } catch (e) {
     debug('[raknet] segfault handler is not installed. If you run into crashing issues, install it with `npm i -D segfault-handler` to get debug info on native crashes')
   }
