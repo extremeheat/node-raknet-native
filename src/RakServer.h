@@ -1,6 +1,9 @@
 #pragma once
 
 #include <napi.h>
+
+#include <queue>
+
 #include "RakPeerInterface.h"
 #include "Util.h"
 
@@ -10,7 +13,7 @@ struct ServerOptions {
 };
 
 class RakServer : public Napi::ObjectWrap<RakServer> {
-private:
+   private:
     RakNet::RakPeerInterface* server = nullptr;
     Napi::Function connectionCallback;
     Napi::Function packetCallback;
@@ -19,7 +22,10 @@ private:
     RakNet::SystemAddress conAddr;
     ServerOptions options;
     TsfnContext* ctx = nullptr;
-public:
+    std::queue<JSPacket*> packet_queue;
+    std::mutex packetMutex;
+
+   public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);
     // Constructor
     RakServer(const Napi::CallbackInfo& info);
@@ -32,13 +38,13 @@ public:
 
     void SetPongResponse(const Napi::CallbackInfo& info);
 
-    //Napi::Value GetConnectionsCount(const Napi::CallbackInfo& info);
+    // Napi::Value GetConnectionsCount(const Napi::CallbackInfo& info);
 
     void Kick(const Napi::CallbackInfo& info);
     void Close(const Napi::CallbackInfo& info);
     // Called by garbage collector, we don't have to worry about it
     ~RakServer() {
-        //printf("raknet server freeing\n");
+        // printf("raknet server freeing\n");
         if (server) {
             server->Shutdown(500);
             RakNet::RakPeerInterface::DestroyInstance(server);

@@ -1,5 +1,6 @@
-const { Server, Client } = require('../ts/RakNet')
-const { MessageID, PacketPriority, PacketReliability } = require('../ts/Constants')
+/* eslint-env mocha */
+const { Server, Client } = require('raknet-native')
+const { MessageID, PacketPriority, PacketReliability } = require('../lib/Constants')
 
 async function pingTest () {
   return new Promise((res, rej) => {
@@ -19,7 +20,7 @@ async function pingTest () {
       client.close()
       server.close()
       setTimeout(() => {
-        res() // allow for server+client to close
+        res() // allow for server + client to close
       }, 500)
     })
 
@@ -71,8 +72,6 @@ async function connectTest () {
         for (let j = 0; j < 64; j += 4) buf[j] = j + i
         buf[0] = 0xf0
         buf[1] = i
-        // console.log('BUF', buf, buf.buffer)
-        // console.log('i', i)
         client.send(buf, PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
       }
     })
@@ -89,7 +88,6 @@ async function kickTest () {
 
     server.on('openConnection', (client) => {
       console.log('new connection', client)
-      // client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
       client.close()
     })
     server.listen()
@@ -98,7 +96,7 @@ async function kickTest () {
       try {
         const ret = client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
       } catch (e) {
-        console.log('Expected error', e)
+        console.log('** Expected error 😀 **', e)
         server.close()
         client.close()
         res()
@@ -109,21 +107,9 @@ async function kickTest () {
   })
 }
 
-let done = false
-async function runTests () {
-  console.info('🔵 Running ping test')
-  await pingTest()
-  console.info('✔ Passed, OK')
-  console.info('🔵 Running connection test')
-  await connectTest()
-  console.info('✔ Passed, OK')
-  console.info('🔵 Running kick test')
-  await kickTest()
-  console.info('✔ Passed, OK')
-  done = true
-}
-
-runTests()
-setTimeout(() => {
-  if (!done) throw Error('Timeout!')
-}, 5000)
+describe('server tests', function () {
+  this.timeout(5000)
+  it('ping test', pingTest)
+  it('connection test', connectTest)
+  it('kick test', kickTest)
+})

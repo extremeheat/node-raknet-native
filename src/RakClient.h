@@ -1,11 +1,14 @@
 #pragma once
 
 #include <napi.h>
+
+#include <queue>
+
 #include "RakPeerInterface.h"
 #include "Util.h"
 
 class RakClient : public Napi::ObjectWrap<RakClient> {
-private:
+   private:
     RakNet::RakPeerInterface* client = nullptr;
     Napi::Function connectionCallback;
     Napi::Function packetCallback;
@@ -13,7 +16,10 @@ private:
     int port = 0;
     RakNet::SystemAddress conAddr;
     TsfnContext* context = nullptr;
-public:
+    std::mutex packetMutex;
+    std::queue<JSPacket*> packet_queue;
+
+   public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);
     // Constructor
     RakClient(const Napi::CallbackInfo& info);
@@ -29,6 +35,7 @@ public:
     // Send an Encapsulated raknet packet
     Napi::Value SendEncapsulated(const Napi::CallbackInfo& info);
     void Close(const Napi::CallbackInfo& info);
+    void Close();
     // Called by garbage collector, we don't have to worry about it
     ~RakClient() {
         if (client) {

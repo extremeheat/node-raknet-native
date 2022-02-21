@@ -1,14 +1,16 @@
 #pragma once
-#include <thread>
 #include <ctype.h>
 #include <stdio.h>
-#include "napi.h"
+
+#include <thread>
+
 #include "RakPeerInterface.h"
+#include "napi.h"
 
 // Holds the context for our RakNet thread
 struct TsfnContext {
-    TsfnContext(Napi::Env env) : deferred(Napi::Promise::Deferred::New(env)) {};
-    Napi::Promise::Deferred deferred; // Don't allow JS to gc until server is closed
+    TsfnContext(Napi::Env env) : deferred(Napi::Promise::Deferred::New(env)){};
+    Napi::Promise::Deferred deferred;  // Don't allow JS to gc until server is closed
     bool running = true;
     RakNet::RakPeerInterface* rakPeer = nullptr;
     std::thread nativeThread;
@@ -27,23 +29,20 @@ struct JSPacket {
 };
 
 inline JSPacket* CreateJSPacket(RakNet::Packet* p) {
-    auto jsData = new JSPacket{ p->systemAddress, p->guid, p->length };
+    auto jsData = new JSPacket{p->systemAddress, p->guid, p->length};
     jsData->data = new unsigned char[p->length];
     memcpy(jsData->data, p->data, p->length);
     return jsData;
 }
 
 inline void FreeJSPacket(JSPacket* p) {
-    delete p->data;
+    delete[] p->data;
     delete p;
 }
 
-inline void FreeBuf(Napi::Env env, void* buf, JSPacket* hint) {
-    FreeJSPacket((JSPacket*)hint);
-}
-
+inline void FreeBuf(Napi::Env env, void* buf, JSPacket* hint) { FreeJSPacket((JSPacket*)hint); }
 
 // Hex tools
 
-unsigned char GetPacketIdentifier2(RakNet::Packet* p); // get first byte of packet
-void hexdump(void* ptr, int buflen); // dump packet
+unsigned char GetPacketIdentifier2(RakNet::Packet* p);  // get first byte of packet
+void hexdump(void* ptr, int buflen);                    // dump packet

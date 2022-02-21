@@ -1,6 +1,6 @@
 const bindings = require('./binding')
-const { Client, Server } = require('./ts/RakNet')
-const { MessageID, PacketReliability, PacketPriority } = require('./ts/Constants')
+const { Client, Server } = require('./lib/RakNet')
+const { MessageID, PacketReliability, PacketPriority } = require('./lib/Constants')
 module.exports = {
   RakClient: bindings.RakClient,
   RakServer: bindings.RakServer,
@@ -8,6 +8,5 @@ module.exports = {
   Server,
   MessageID,
   PacketPriority,
-  PacketReliability,
-  ...require('./ts/mcHelper')
+  PacketReliability
 }

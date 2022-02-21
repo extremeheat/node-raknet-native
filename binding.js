@@ -5,6 +5,7 @@ const debug = require('debug')('raknet')
 if (!process.versions.electron) {
   // Electron has its own crash handler, and segfault-handler
   // uses NAN which is a hassle, so only load outside electron
+  // Note: Need to be using debug release to make use of this! Run `npm run clean` then `npm test` to get a debug build
   try {
     const SegfaultHandler = require('segfault-handler')
     SegfaultHandler.registerHandler('crash.log')
