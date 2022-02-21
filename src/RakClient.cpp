@@ -92,7 +92,7 @@ void RakClient::RunLoop() {
         for (int i = 0; packet_queue.size() > 0; i++) {
             JSPacket* data = packet_queue.front();
             packet_queue.pop();
-            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, FreeBuf, data);
+            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length/*, FreeBuf, data*/);
             systemAddress = data->systemAddress;
             guid = data->guid;
         }
