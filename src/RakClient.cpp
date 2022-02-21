@@ -92,7 +92,7 @@ void RakClient::RunLoop() {
         for (int i = 0; packet_queue.size() > 0; i++) {
             JSPacket* data = packet_queue.front();
             packet_queue.pop();
-            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length/*, FreeBuf, data*/);
+            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, FreeBuf, data);
             systemAddress = data->systemAddress;
             guid = data->guid;
         }
@@ -116,6 +116,16 @@ void RakClient::RunLoop() {
             packetMutex.unlock();
         }
         if (packet_queue.size()) {
+            if (!context->running) {
+                packetMutex.lock();
+                for (int i = 0; packet_queue.size() > 0; i++) {
+                    JSPacket* data = packet_queue.front();
+                    packet_queue.pop();
+                    FreeJSPacket(data);
+                }
+                packetMutex.unlock();
+                break;
+            }
             printf("inbound %d packets\n", this->packet_queue.size());
             auto status = context->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
