@@ -1,4 +1,3 @@
-const bedrockServer = require('minecraft-bedrock-server')
 const bp = require('bedrock-protocol')
 const { join } = require('path')
 const { once } = require('events')
@@ -20,7 +19,7 @@ async function main() {
   for (const version of versions) {
     const [port4, port6] = [await getPort(), await getPort()]
     console.log('Server ran on port', port4, port6)
-    const handle = await bedrockServer.startServerAndWait(version, 90000, { path: join(__dirname, './bds-' + version), 'server-port': port4, 'server-portv6': port6 })
+    const handle = bp.createServer({ host: '0.0.0.0', port: port4, offline: true })
 
     async function connect(cachingEnabled) {
       const client = bp.createClient({
@@ -47,8 +46,9 @@ async function main() {
       console.log('✅ Twice', i)
     }
 
-    await handle.kill()
-    await once(handle, 'exit')
+    // bedrock-protocol has a bug where it throws for an unexpected packet. It should drop, so ignore it here for now.
+    handle.on('error', console.log)
+    handle.close()
   }
 }
 

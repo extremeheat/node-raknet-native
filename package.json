@@ -37,7 +37,6 @@
   "devDependencies": {
     "@types/node": "^14.14.31",
     "bedrock-protocol": "^3.10.0",
-    "minecraft-bedrock-server": "^1.1.2",
     "mocha": "^9.2.1",
     "raknet-native": "file:.",
     "typescript": "^4.2.2"
