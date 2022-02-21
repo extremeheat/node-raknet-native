@@ -16,7 +16,7 @@ class RakClient : public Napi::ObjectWrap<RakClient> {
     RakNet::SystemAddress conAddr;
     TsfnContext* context = nullptr;
     std::mutex packetMutex;
-    std::queue<RakNet::Packet*> packet_queue;
+    std::queue<JSPacket*> packet_queue;
 
    public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);

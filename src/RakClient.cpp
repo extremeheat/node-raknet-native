@@ -90,14 +90,11 @@ void RakClient::RunLoop() {
         RakNet::SystemAddress systemAddress;
         RakNet::AddressOrGUID guid;
         for (int i = 0; packet_queue.size() > 0; i++) {
-            RakNet::Packet* data = packet_queue.front();
+            JSPacket* data = packet_queue.front();
             packet_queue.pop();
-            auto copyOfData = new char[data->length];
-            memcpy(copyOfData, data->data, data->length);
-            packets[i] = Napi::ArrayBuffer::New(env, copyOfData/*, data->length, FinalizePacket2*/);
+            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, FreeBuf, data);
             systemAddress = data->systemAddress;
             guid = data->guid;
-            client->DeallocatePacket(data);
         }
         packetMutex.unlock();
 
@@ -111,9 +108,11 @@ void RakClient::RunLoop() {
     RakNet::SystemAddress clientID;
     while (context->running && client->IsActive()) {
         RakSleep(30);
-        while (p = client->Receive()) {
+        while (context->running, p = client->Receive()) {
             packetMutex.lock();
-            packet_queue.push(p);
+            auto jsp = CreateJSPacket(p);
+            client->DeallocatePacket(p);
+            packet_queue.push(jsp);
             packetMutex.unlock();
         }
         if (packet_queue.size()) {
