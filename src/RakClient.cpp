@@ -94,14 +94,16 @@ void RakClient::RunLoop() {
             packet_queue.pop();
             auto copyOfData = new char[data->length];
             memcpy(copyOfData, data->data, data->length);
-            packets[i] = Napi::ArrayBuffer::New(env, copyOfData, data->length, FinalizePacket2);
+            packets[i] = Napi::ArrayBuffer::New(env, copyOfData/*, data->length, FinalizePacket2*/);
             systemAddress = data->systemAddress;
             guid = data->guid;
+            client->DeallocatePacket(data);
         }
         packetMutex.unlock();
 
         jsCallback.Call({packets, Napi::String::From(env, systemAddress.ToString(true, '/')),
                          Napi::String::From(env, guid.ToString())});
+        printf("Read packets\n");
     };
 
     // Holds packets

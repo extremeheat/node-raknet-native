@@ -1,4 +1,6 @@
-const SegfaultHandler = require('segfault-handler')
+const SegfaultHandler = require('segfault-handler');
+SegfaultHandler.registerHandler('crash.log');
+// SegfaultHandler.causeSegfault();
 const helper = require('./helpers/buildPath.js')
 const fs = require('fs')
 const debug = require('debug')('raknet')
