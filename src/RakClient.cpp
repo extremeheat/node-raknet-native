@@ -77,8 +77,6 @@ void RakClient::Setup() {
     client->Startup(8, &socketDescriptor, 1);
 }
 
-void FinalizePacket2(Napi::Env env, void* p) { delete[](char*) p; }
-
 void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and

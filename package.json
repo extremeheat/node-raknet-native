@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "checkEnv": "node buildChecks.js",
-    "build": "cmake-js clean",
+    "clean": "cmake-js clean",
     "install": "node buildChecks.js",
     "postci": "node helpers/postCI.js",
     "cmake": "cmake-js build --debug",
