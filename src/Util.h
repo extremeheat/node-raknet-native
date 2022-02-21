@@ -36,7 +36,6 @@ inline JSPacket* CreateJSPacket(RakNet::Packet* p) {
 }
 
 inline void FreeJSPacket(JSPacket* p) {
-    printf("Freeing\n");
     delete[] p->data;
     delete p;
 }

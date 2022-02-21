@@ -40,7 +40,7 @@ async function main() {
       client.close()
     }
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 20; i++) {
       await connect(false)
       console.log('✅ Once', i)
       await connect(true)

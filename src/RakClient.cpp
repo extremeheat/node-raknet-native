@@ -84,7 +84,6 @@ void RakClient::RunLoop() {
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
     auto callback = [this](Napi::Env env, Napi::Function jsCallback, void* datasPtr) {
-        printf("Reading %lld packets\n", packet_queue.size());
         Napi::Array packets = Napi::Array::New(env, packet_queue.size());
         packetMutex.lock();
         RakNet::SystemAddress systemAddress;
@@ -100,7 +99,6 @@ void RakClient::RunLoop() {
 
         jsCallback.Call({packets, Napi::String::From(env, systemAddress.ToString(true, '/')),
                          Napi::String::From(env, guid.ToString())});
-        printf("Read packets\n");
     };
 
     // Holds packets
@@ -126,7 +124,7 @@ void RakClient::RunLoop() {
                 packetMutex.unlock();
                 break;
             }
-            printf("inbound %d packets\n", this->packet_queue.size());
+
             auto status = context->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
@@ -134,7 +132,6 @@ void RakClient::RunLoop() {
         }
     }
 
-    printf("Client loop release\n");
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
     // auto refCount = this->Ref();  // Force increment the ref count to avoid gc
@@ -161,7 +158,6 @@ Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
         1,             // Initial thread count
         context,       // Context,
         [](Napi::Env env, RakClient* thiz, TsfnContext* context) {
-            printf("fin reg start\n");
             context->running = false;
             // Close the RakNet client
             thiz->Close();
@@ -170,7 +166,6 @@ Napi::Value RakClient::Listen(const Napi::CallbackInfo& info) {
             // Resolve the Promise previously returned to JS via the CreateTSFN method.
             context->deferred.Resolve(Napi::Boolean::New(env, true));
             delete context;
-            printf("fin reg end\n");
         },    // Finalizer
         this  // Finalizer data
     );
@@ -215,11 +210,7 @@ Napi::Value RakClient::SendEncapsulated(const Napi::CallbackInfo& info) {
 
 void RakClient::Close() {
     if (this->context) context->running = false;
-    if (this->client) this->client->Shutdown(600);
-    printf("Close JS\n");
+    if (this->client) this->client->Shutdown(300);
 }
 
-void RakClient::Close(const Napi::CallbackInfo& info) {
-    Close();
-    printf("Close C++\n");
-}
+void RakClient::Close(const Napi::CallbackInfo& info) { Close(); }
