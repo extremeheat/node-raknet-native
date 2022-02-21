@@ -1,3 +1,8 @@
+## 1.1.0
+* Fixes an issue with client/server receiving packets after calling close(), mitigate lifetime issue
+* Mitigates some potential race conditions in packet handling
+* clang-format, remove minecraft helpers, use mocha #8
+
 ## 1.0.9
 * Fix macOS Catalina prebuild
 
