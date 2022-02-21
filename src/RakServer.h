@@ -2,6 +2,8 @@
 
 #include <napi.h>
 
+#include <queue>
+
 #include "RakPeerInterface.h"
 #include "Util.h"
 
@@ -20,6 +22,8 @@ class RakServer : public Napi::ObjectWrap<RakServer> {
     RakNet::SystemAddress conAddr;
     ServerOptions options;
     TsfnContext* ctx = nullptr;
+    std::queue<JSPacket*> packet_queue;
+    std::mutex packetMutex;
 
    public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);

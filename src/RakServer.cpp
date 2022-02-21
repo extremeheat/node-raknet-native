@@ -60,11 +60,12 @@ void RakServer::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [&](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*>* datasPtr) {
-        auto datas = *datasPtr;
-        Napi::Array packets = Napi::Array::New(env, datas.size());
-        for (int i = 0; i < datas.size(); i++) {
-            auto data = datas[i];
+    auto callback = [&](Napi::Env env, Napi::Function jsCallback, void* datasPtr) {
+        Napi::Array packets = Napi::Array::New(env, packet_queue.size());
+        packetMutex.lock();
+        for (int i = 0; packet_queue.size() > 0; i++) {
+            JSPacket* data = packet_queue.front();
+            packet_queue.pop();
             Napi::Array fields = Napi::Array::New(env, 3);
             int j = 0;
             fields[j++] = Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data);
@@ -72,8 +73,8 @@ void RakServer::RunLoop() {
             fields[j++] = Napi::String::From(env, data->guid.ToString());
             packets[i] = fields;
         }
+        packetMutex.unlock();
         jsCallback.Call({packets});
-        delete datasPtr;
     };
 
     // Holds packets
@@ -81,19 +82,28 @@ void RakServer::RunLoop() {
     RakNet::SystemAddress clientID;
     while (ctx->running && client->IsActive()) {
         RakSleep(50);
-        auto jsps = new std::vector<JSPacket*>();
         while (p = client->Receive()) {
+            packetMutex.lock();
             auto jsp = CreateJSPacket(p);
-            jsps->push_back(jsp);
+            this->packet_queue.push(jsp);
             client->DeallocatePacket(p);
+            packetMutex.unlock();
         }
-        if (jsps->size()) {
-            auto status = ctx->tsfn.NonBlockingCall(jsps, callback);
+        if (packet_queue.size()) {
+            if (!ctx->running) {
+                packetMutex.lock();
+                for (int i = 0; packet_queue.size() > 0; i++) {
+                    JSPacket* data = packet_queue.front();
+                    packet_queue.pop();
+                    FreeJSPacket(data);
+                }
+                packetMutex.unlock();
+                break;
+            }
+            auto status = ctx->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakServer failed to emit packet to JS: %d\n", status);
             }
-        } else {
-            delete jsps;
         }
     }
     printf("server RELEASING\n");
