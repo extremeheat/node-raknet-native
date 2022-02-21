@@ -6,6 +6,7 @@
 #include <napi.h>
 
 #include <chrono>
+#include <mutex>  // std::mutex
 #include <thread>
 #include <vector>
 
@@ -76,22 +77,31 @@ void RakClient::Setup() {
     client->Startup(8, &socketDescriptor, 1);
 }
 
+void FinalizePacket2(Napi::Env env, void* p) { delete[](char*) p; }
+
 void RakClient::RunLoop() {
     // This callback transforms the native addon data (int *data) to JavaScript
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
-    auto callback = [this](Napi::Env env, Napi::Function jsCallback, std::vector<JSPacket*>* datasPtr) {
-        printf("Reading %d packets\n", datasPtr->size());
-        auto datas = *datasPtr;
-        Napi::Array packets = Napi::Array::New(env, datas.size());
-        for (int i = 0; i < datas.size(); i++) {
-            auto data = datas[i];
-            packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length);
+    auto callback = [this](Napi::Env env, Napi::Function jsCallback, void* datasPtr) {
+        printf("Reading %lld packets\n", packet_queue.size());
+        Napi::Array packets = Napi::Array::New(env, packet_queue.size());
+        packetMutex.lock();
+        RakNet::SystemAddress systemAddress;
+        RakNet::AddressOrGUID guid;
+        for (int i = 0; packet_queue.size() > 0; i++) {
+            RakNet::Packet* data = packet_queue.front();
+            packet_queue.pop();
+            auto copyOfData = new char[data->length];
+            memcpy(copyOfData, data->data, data->length);
+            packets[i] = Napi::ArrayBuffer::New(env, copyOfData, data->length, FinalizePacket2);
+            systemAddress = data->systemAddress;
+            guid = data->guid;
         }
-        jsCallback.Call({packets, Napi::String::From(env, datas[0]->systemAddress.ToString(true, '/')),
-                         Napi::String::From(env, datas[0]->guid.ToString())});
-        delete datasPtr;
-        printf("Freed %d packets\n", datasPtr->size());
+        packetMutex.unlock();
+
+        jsCallback.Call({packets, Napi::String::From(env, systemAddress.ToString(true, '/')),
+                         Napi::String::From(env, guid.ToString())});
     };
 
     // Holds packets
@@ -99,26 +109,24 @@ void RakClient::RunLoop() {
     RakNet::SystemAddress clientID;
     while (context->running && client->IsActive()) {
         RakSleep(30);
-        auto jsps = new std::vector<JSPacket*>();
         while (p = client->Receive()) {
-            auto jsp = CreateJSPacket(p);
-            jsps->push_back(jsp);
-            client->DeallocatePacket(p);
+            packetMutex.lock();
+            packet_queue.push(p);
+            packetMutex.unlock();
         }
-        if (jsps->size()) {
-            auto status = context->tsfn.NonBlockingCall(jsps, callback);
+        if (packet_queue.size()) {
+            printf("inbound %d packets\n", this->packet_queue.size());
+            auto status = context->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
             }
-        } else {
-            delete jsps;
         }
     }
 
     printf("Client loop release\n");
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
-    //auto refCount = this->Ref();  // Force increment the ref count to avoid gc
+    // auto refCount = this->Ref();  // Force increment the ref count to avoid gc
     context->tsfn.Release();
 }
 
@@ -200,8 +208,7 @@ void RakClient::Close() {
     printf("Close JS\n");
 }
 
-void RakClient::Close(const Napi::CallbackInfo& info) { 
+void RakClient::Close(const Napi::CallbackInfo& info) {
     Close();
     printf("Close C++\n");
-    //context->tsfn.Release();
 }

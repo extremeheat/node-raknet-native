@@ -1,6 +1,7 @@
 #pragma once
 
 #include <napi.h>
+#include <queue>
 
 #include "RakPeerInterface.h"
 #include "Util.h"
@@ -14,6 +15,8 @@ class RakClient : public Napi::ObjectWrap<RakClient> {
     int port = 0;
     RakNet::SystemAddress conAddr;
     TsfnContext* context = nullptr;
+    std::mutex packetMutex;
+    std::queue<RakNet::Packet*> packet_queue;
 
    public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);
