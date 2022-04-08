@@ -53,5 +53,5 @@ async function main() {
 }
 
 describe('bedrock-protocol works', function () {
-  //it('works', main)
+  it('works', main)
 })
