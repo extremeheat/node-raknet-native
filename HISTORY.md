@@ -1,3 +1,7 @@
+## 1.2.0
+* Client specific protocol versions (#14)
+* Allow servers to accept older RakNet protocol version clients
+
 ## 1.1.0
 * Fixes an issue with client/server receiving packets after calling close(), mitigate lifetime issue
 * Mitigates some potential race conditions in packet handling
