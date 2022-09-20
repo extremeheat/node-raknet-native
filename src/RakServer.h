@@ -24,6 +24,7 @@ class RakServer : public Napi::ObjectWrap<RakServer> {
     TsfnContext* ctx = nullptr;
     std::queue<JSPacket*> packet_queue;
     std::mutex packetMutex;
+    int protocolVersion = -1;
 
    public:
     static Napi::Object Initialize(Napi::Env& env, Napi::Object& target);

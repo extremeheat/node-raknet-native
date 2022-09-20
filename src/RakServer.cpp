@@ -49,7 +49,7 @@ RakServer::RakServer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakServe
     if (options.Has("maxConnections")) this->options.maxConnections = options.Get("maxConnections").As<Napi::Number>();
     if (options.Has("protocolVersion")) {
         auto protocolVersion = options.Get("protocolVersion").As<Napi::Number>().Int32Value();
-        SetRakNetProtocolVersion(protocolVersion);
+        this->protocolVersion = protocolVersion;
     }
 
     server = RakNet::RakPeerInterface::GetInstance();
@@ -122,6 +122,8 @@ Napi::Value RakServer::Listen(const Napi::CallbackInfo& info) {
 
     server->SetTimeoutTime(30000, RakNet::UNASSIGNED_SYSTEM_ADDRESS);
     server->SetMaximumIncomingConnections(this->options.maxConnections);
+    server->allowClientsWithOlderVersion = true;
+    if (this->protocolVersion != -1) server->SetProtocolVersion(this->protocolVersion);
 
     DataStructures::List<RakNet::RakNetSocket2*> sockets;
     server->GetSockets(sockets);

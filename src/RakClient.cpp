@@ -48,7 +48,7 @@ RakClient::RakClient(const Napi::CallbackInfo& info) : Napi::ObjectWrap<RakClien
     auto options = info[2].As<Napi::Object>();
     if (options.Has("protocolVersion")) {
         auto protocolVersion = options.Get("protocolVersion").As<Napi::Number>().Int32Value();
-        SetRakNetProtocolVersion(protocolVersion);
+        this->protocolVersion = protocolVersion;
     }
 
     // Validate the hostname + port and save
@@ -67,6 +67,7 @@ void RakClient::Setup() {
     client = RakNet::RakPeerInterface::GetInstance();
     client->SetOccasionalPing(true);
     client->SetUnreliableTimeout(1000);
+    if (this->protocolVersion != -1) client->SetProtocolVersion(this->protocolVersion);
 
     DataStructures::List<RakNet::RakNetSocket2*> sockets;
     client->GetSockets(sockets);
