@@ -11,10 +11,11 @@ class ServerName {
     online: 0,
     max: 5
   }
+
   gamemode = 'Creative'
   serverId = '0'
 
-  toString() {
+  toString () {
     return [
       'MCPE',
       this.motd,
@@ -30,9 +31,9 @@ class ServerName {
 }
 
 describe('misc test', () => {
-  it('works with custom ServerNames', async function() {
-    const randomPort = 19132 + ((Math.random() * 100)|0)
-    var server = new Server('0.0.0.0', randomPort, {
+  it('works with custom ServerNames', async function () {
+    const randomPort = 19132 + ((Math.random() * 100) | 0)
+    let server = new Server('0.0.0.0', randomPort, {
       maxConnections: 3,
       message: Buffer.from('FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;')
     })
@@ -40,21 +41,21 @@ describe('misc test', () => {
       console.log('closed!')
       server = null
     })
-    var client = new Client('127.0.0.1', randomPort, 'minecraft')
-  
+    const client = new Client('127.0.0.1', randomPort, 'minecraft')
+
     client.on('encapsulated', (packet) => {
       client.send(packet.buffer, PacketPriority.HIGH_PRIORITY, PacketReliability.RELIABLE, 0)
     })
-  
+
     setTimeout(() => {
       client.connect()
       client.ping()
     }, 100)
-  
+
     server.on('openConnection', (client) => {
       for (let i = 0; i < 5; i++) {
         const buf = Buffer.alloc(1000)
-        for (var j = 0; j < 64; j += 4) buf[j] = j + i
+        for (let j = 0; j < 64; j += 4) buf[j] = j + i
         buf[0] = 0xf0
         client.send(buf, 1, 0, 0)
       }

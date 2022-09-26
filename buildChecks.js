@@ -5,7 +5,7 @@ const cp = require('child_process')
 function checkIfPrebuildExists () {
   try {
     const bindings = require('./binding')
-    if (!bindings) throw 'Bindings are undefined'
+    if (!bindings) throw new Error('Bindings are undefined')
     console.log('[raknet] not building as already have prebuild')
     return true
   } catch (e) {
