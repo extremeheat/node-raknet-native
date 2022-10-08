@@ -1,5 +1,4 @@
 const bp = require('bedrock-protocol')
-const { join } = require('path')
 const { once } = require('events')
 const net = require('net')
 

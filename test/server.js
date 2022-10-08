@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 const { Server, Client } = require('raknet-native')
-const { MessageID, PacketPriority, PacketReliability } = require('../lib/Constants')
+const { PacketPriority, PacketReliability } = require('../lib/Constants')
 
 async function pingTest () {
   return new Promise((resolve, reject) => {
@@ -20,7 +20,7 @@ async function pingTest () {
       client.close()
       server.close()
       setTimeout(() => {
-        res() // allow for server + client to close
+        resolve() // allow for server + client to close
       }, 500)
     })
 
@@ -30,7 +30,7 @@ async function pingTest () {
 }
 
 async function connectTest () {
-  return new Promise((res, rej) => {
+  return new Promise((resolve, reject) => {
     const message = 'FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;'
     const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
@@ -54,7 +54,7 @@ async function connectTest () {
     })
     let lastS = 0
     server.on('encapsulated', (encap) => {
-      console.assert(encap.buffer[0] == 0xf0)
+      console.assert(encap.buffer[0] === 0xf0)
       const ix = encap.buffer[1]
       if (lastS++ !== ix) {
         throw Error(`Packet mismatch: ${lastS - 1} != ${ix}`)
@@ -62,7 +62,7 @@ async function connectTest () {
       if (lastS === 50) {
         client.close()
         server.close()
-        res(true)
+        resolve(true)
       }
     })
     server.on('openConnection', (client) => {
@@ -99,7 +99,7 @@ async function kickTest () {
         console.log('** Expected error 😀 **', e)
         server.close()
         client.close()
-        res()
+        resolve()
       }
     })
 

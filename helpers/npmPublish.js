@@ -4,7 +4,6 @@
 // This only works for x64
 
 const fs = require('fs')
-const proc = require('child_process')
 
 // console.log('Current dir:')
 
