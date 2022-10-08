@@ -1,5 +1,4 @@
 const bp = require('bedrock-protocol')
-const { join } = require('path')
 const { once } = require('events')
 const net = require('net')
 
@@ -14,14 +13,14 @@ const getPort = () => new Promise(resolve => {
 
 const versions = ['1.16.220', '1.17.10', '1.18.0']
 
-async function main() {
+async function main () {
   this.timeout(1000 * 60 * 5)
   for (const version of versions) {
     const [port4, port6] = [await getPort(), await getPort()]
     console.log('Server ran on port', port4, port6)
     const handle = bp.createServer({ host: '0.0.0.0', port: port4, offline: true })
 
-    async function connect(cachingEnabled) {
+    async function connect (cachingEnabled) {
       const client = bp.createClient({
         host: 'localhost',
         port: port4,
@@ -53,5 +52,5 @@ async function main() {
 }
 
 describe('bedrock-protocol works', function () {
-  //it('works', main)
+  // it('works', main)
 })

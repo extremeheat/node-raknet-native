@@ -1,9 +1,9 @@
 /* eslint-env mocha */
 const { Server, Client } = require('raknet-native')
-const { MessageID, PacketPriority, PacketReliability } = require('../lib/Constants')
+const { PacketPriority, PacketReliability } = require('../lib/Constants')
 
 async function pingTest () {
-  return new Promise((res, rej) => {
+  return new Promise((resolve, reject) => {
     const message = 'FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;'
     const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
@@ -15,12 +15,12 @@ async function pingTest () {
     client.on('pong', (data) => {
       const msg = data.extra?.toString()
       console.log('PONG data', data)
-      if (!msg || msg != message) throw Error(`PONG mismatch ${msg} != ${message}`)
+      if (!msg || msg !== message) throw Error(`PONG mismatch ${msg} != ${message}`)
       console.log('OK')
       client.close()
       server.close()
       setTimeout(() => {
-        res() // allow for server + client to close
+        resolve() // allow for server + client to close
       }, 500)
     })
 
@@ -30,7 +30,7 @@ async function pingTest () {
 }
 
 async function connectTest () {
-  return new Promise((res, rej) => {
+  return new Promise((resolve, reject) => {
     const message = 'FMCPE;JSRakNet - JS powered RakNet;408;1.16.20;0;5;0;JSRakNet;Creative;'
     const server = new Server('0.0.0.0', 19130, {
       maxConnections: 3,
@@ -44,7 +44,7 @@ async function connectTest () {
     client.on('connect', () => {
       console.log('connected!')
       client.on('encapsulated', (encap) => {
-        console.assert(encap.buffer[0] == 0xf0)
+        console.assert(encap.buffer[0] === 0xf0)
         const ix = encap.buffer[1]
         if (lastC++ !== ix) {
           throw Error(`Packet mismatch: ${lastC - 1} != ${ix}`)
@@ -54,15 +54,15 @@ async function connectTest () {
     })
     let lastS = 0
     server.on('encapsulated', (encap) => {
-      console.assert(encap.buffer[0] == 0xf0)
+      console.assert(encap.buffer[0] === 0xf0)
       const ix = encap.buffer[1]
       if (lastS++ !== ix) {
         throw Error(`Packet mismatch: ${lastS - 1} != ${ix}`)
       }
-      if (lastS == 50) {
+      if (lastS === 50) {
         client.close()
         server.close()
-        res(true)
+        resolve(true)
       }
     })
     server.on('openConnection', (client) => {
@@ -80,7 +80,7 @@ async function connectTest () {
 }
 
 async function kickTest () {
-  return new Promise((res, rej) => {
+  return new Promise((resolve, reject) => {
     const server = new Server('0.0.0.0', 19131, {
       maxConnections: 3
     })
@@ -94,12 +94,12 @@ async function kickTest () {
     client.on('disconnect', packet => {
       console.log('clien got disconnect', packet)
       try {
-        const ret = client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
+        client.send(Buffer.from('\xf0 yello'), PacketPriority.HIGH_PRIORITY, PacketReliability.UNRELIABLE, 0)
       } catch (e) {
         console.log('** Expected error 😀 **', e)
         server.close()
         client.close()
-        res()
+        resolve()
       }
     })
 
