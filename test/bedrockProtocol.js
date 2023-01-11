@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const bp = require('bedrock-protocol')
 const { once } = require('events')
 const net = require('net')

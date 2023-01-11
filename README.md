@@ -60,7 +60,7 @@ git clone --recursive https://github.com/extremeheat/node-raknet-native.git
 
 ## Dependencies
 
-For the most part, pre-builds are provided so you don't need to worry about having the correct build tools installed. But if a pre-build doesn't work, you may need to install the following deps:
+For the most part, pre-builds are provided so you don't need to worry about having the correct build tools installed. But if a pre-build doesn't work or isn't avaliable, you may need to install the following deps:
 
 #### Mac OS
 
@@ -70,6 +70,9 @@ You need to install xcode utilities first (this is *not* the whole Xcode!):
 xcode-select --install
 ```
 
+#### Other platforms
+
+A valid CMake installation is required to build the library along with C++ compiler tools. CMake must be avaliable from the command line path. 
 
 ## Exported API
 See index.d.ts for full API docs, a copy of the definitions are listed below:
