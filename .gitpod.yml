@@ -3,4 +3,6 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 tasks:
+  # Apparently image no longer has preinstalled?
+  - before: sudo apt-get install cmake
   - init: npm install && npm test
