@@ -1,3 +1,6 @@
+## 1.2.2
+* Update raknet dep to fix missing sys/io header on ARM Linux (@LucienHH)
+
 ## 1.2.0
 * Client specific protocol versions (#14)
 * Allow servers to accept older RakNet protocol version clients
