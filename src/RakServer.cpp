@@ -81,7 +81,7 @@ void RakServer::RunLoop() {
     RakNet::Packet* p = 0;
     RakNet::SystemAddress clientID;
     while (ctx->running && client->IsActive()) {
-        RakSleep(50);
+        RakSleep(5);
         while (p = client->Receive()) {
             packetMutex.lock();
             auto jsp = CreateJSPacket(p);
