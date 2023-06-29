@@ -1,3 +1,6 @@
+## 1.2.3
+* Reduce RakSleep amount, reducing latency (@GameParrot)
+
 ## 1.2.2
 * Update raknet dep to fix missing sys/io header on ARM Linux (@LucienHH)
 
