@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <thread>
+#include <vector>
 
 #include "MessageIdentifiers.h"
 #include "RakNetDefines.h"
@@ -61,11 +62,20 @@ void RakServer::RunLoop() {
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
     auto callback = [&](Napi::Env env, Napi::Function jsCallback, void* datasPtr) {
-        Napi::Array packets = Napi::Array::New(env, packet_queue.size());
+        std::vector<JSPacket*> batch;
         packetMutex.lock();
-        for (int i = 0; packet_queue.size() > 0; i++) {
-            JSPacket* data = packet_queue.front();
+        batch.reserve(packet_queue.size());
+        while (!packet_queue.empty()) {
+            batch.push_back(packet_queue.front());
             packet_queue.pop();
+        }
+        packetMutex.unlock();
+
+        if (batch.empty()) return;
+
+        Napi::Array packets = Napi::Array::New(env, batch.size());
+        for (size_t i = 0; i < batch.size(); i++) {
+            JSPacket* data = batch[i];
             Napi::Array fields = Napi::Array::New(env, 3);
             int j = 0;
             fields[j++] = Napi::ArrayBuffer::New(env, data->data, data->length, &FreeBuf, data);
@@ -73,8 +83,11 @@ void RakServer::RunLoop() {
             fields[j++] = Napi::String::From(env, data->guid.ToString());
             packets[i] = fields;
         }
-        packetMutex.unlock();
-        jsCallback.Call({packets});
+        try {
+            jsCallback.Call({packets});
+        } catch (const Napi::Error& e) {
+            fprintf(stderr, "RakServer callback error: %s\n", e.what());
+        }
     };
 
     // Holds packets
@@ -82,30 +95,41 @@ void RakServer::RunLoop() {
     RakNet::SystemAddress clientID;
     while (ctx->running && client->IsActive()) {
         RakSleep(5);
-        while (p = client->Receive()) {
+        bool hasNewPackets = false;
+        while (ctx->running && (p = client->Receive())) {
             packetMutex.lock();
             auto jsp = CreateJSPacket(p);
             this->packet_queue.push(jsp);
             client->DeallocatePacket(p);
             packetMutex.unlock();
+            hasNewPackets = true;
         }
-        if (packet_queue.size()) {
-            if (!ctx->running) {
-                packetMutex.lock();
-                for (int i = 0; packet_queue.size() > 0; i++) {
-                    JSPacket* data = packet_queue.front();
-                    packet_queue.pop();
-                    FreeJSPacket(data);
-                }
-                packetMutex.unlock();
-                break;
+        if (!ctx->running) {
+            packetMutex.lock();
+            while (!packet_queue.empty()) {
+                JSPacket* data = packet_queue.front();
+                packet_queue.pop();
+                FreeJSPacket(data);
             }
+            packetMutex.unlock();
+            break;
+        }
+        if (hasNewPackets) {
             auto status = ctx->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakServer failed to emit packet to JS: %d\n", status);
             }
         }
     }
+
+    packetMutex.lock();
+    while (!packet_queue.empty()) {
+        JSPacket* data = packet_queue.front();
+        packet_queue.pop();
+        FreeJSPacket(data);
+    }
+    packetMutex.unlock();
+
     printf("server RELEASING\n");
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.

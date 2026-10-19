@@ -83,21 +83,33 @@ void RakClient::RunLoop() {
     // values. It also receives the treadsafe-function's registered callback, and
     // may choose to call it.
     auto callback = [this](Napi::Env env, Napi::Function jsCallback, void* datasPtr) {
-        Napi::Array packets = Napi::Array::New(env, packet_queue.size());
+        std::vector<JSPacket*> batch;
         packetMutex.lock();
+        batch.reserve(packet_queue.size());
+        while (!packet_queue.empty()) {
+            batch.push_back(packet_queue.front());
+            packet_queue.pop();
+        }
+        packetMutex.unlock();
+
+        if (batch.empty()) return;
+
+        Napi::Array packets = Napi::Array::New(env, batch.size());
         RakNet::SystemAddress systemAddress;
         RakNet::AddressOrGUID guid;
-        for (int i = 0; packet_queue.size() > 0; i++) {
-            JSPacket* data = packet_queue.front();
-            packet_queue.pop();
+        for (size_t i = 0; i < batch.size(); i++) {
+            JSPacket* data = batch[i];
             packets[i] = Napi::ArrayBuffer::New(env, data->data, data->length, FreeBuf, data);
             systemAddress = data->systemAddress;
             guid = data->guid;
         }
-        packetMutex.unlock();
 
-        jsCallback.Call({packets, Napi::String::From(env, systemAddress.ToString(true, '/')),
-                         Napi::String::From(env, guid.ToString())});
+        try {
+            jsCallback.Call({packets, Napi::String::From(env, systemAddress.ToString(true, '/')),
+                             Napi::String::From(env, guid.ToString())});
+        } catch (const Napi::Error& e) {
+            fprintf(stderr, "RakClient callback error: %s\n", e.what());
+        }
     };
 
     // Holds packets
@@ -105,31 +117,40 @@ void RakClient::RunLoop() {
     RakNet::SystemAddress clientID;
     while (context->running && client->IsActive()) {
         RakSleep(3);
-        while (context->running, p = client->Receive()) {
+        bool hasNewPackets = false;
+        while (context->running && (p = client->Receive())) {
             packetMutex.lock();
             auto jsp = CreateJSPacket(p);
             client->DeallocatePacket(p);
             packet_queue.push(jsp);
             packetMutex.unlock();
+            hasNewPackets = true;
         }
-        if (packet_queue.size()) {
-            if (!context->running) {
-                packetMutex.lock();
-                for (int i = 0; packet_queue.size() > 0; i++) {
-                    JSPacket* data = packet_queue.front();
-                    packet_queue.pop();
-                    FreeJSPacket(data);
-                }
-                packetMutex.unlock();
-                break;
+        if (!context->running) {
+            packetMutex.lock();
+            while (!packet_queue.empty()) {
+                JSPacket* data = packet_queue.front();
+                packet_queue.pop();
+                FreeJSPacket(data);
             }
-
+            packetMutex.unlock();
+            break;
+        }
+        if (hasNewPackets) {
             auto status = context->tsfn.NonBlockingCall(&this->packet_queue, callback);
             if (status != napi_ok) {
                 fprintf(stderr, "RakClient failed to emit packet to JS: %d\n", status);
             }
         }
     }
+
+    packetMutex.lock();
+    while (!packet_queue.empty()) {
+        JSPacket* data = packet_queue.front();
+        packet_queue.pop();
+        FreeJSPacket(data);
+    }
+    packetMutex.unlock();
 
     // Release the thread-safe function. This decrements the internal thread
     // count, and will perform finalization since the count will reach 0.
